@@ -6,7 +6,7 @@ description: |
   display editor.
 base: core18
 grade: stable
-confinement: devmode
+confinement: classic
 license: GPL-3.0+
 
 environment:
