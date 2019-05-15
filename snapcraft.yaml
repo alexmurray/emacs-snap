@@ -10,14 +10,13 @@ confinement: classic
 license: GPL-3.0+
 
 environment:
-  XDG_DATA_DIRS: $SNAP/share:$XDG_DATA_DIRS
   EMACSDATA: $SNAP/share/emacs/$SNAP_VERSION/etc
   EMACSLOADPATH: $SNAP/share/emacs/site-lisp:$SNAP/share/emacs/$SNAP_VERSION/lisp/
   INFOPATH: $SNAP/share/info/
 
 apps:
   emacs:
-    command: bin/desktop-launch $SNAP/bin/emacs
+    command: desktop-launch emacs
     desktop: share/applications/emacs.desktop
   emacsclient:
     command: emacsclient
@@ -28,27 +27,8 @@ apps:
   etags:
     command: etags
 
-plugs:
-  gnome-3-28-1804:
-    interface: content
-    target: $SNAP/gnome-platform
-    default-provider: gnome-3-28-1804
-  gtk-3-themes:
-    interface: content
-    target: $SNAP/data-dir/themes
-    default-provider: gtk-common-themes
-  icon-themes:
-    interface: content
-    target: $SNAP/data-dir/icons
-    default-provider: gtk-common-themes
-  sound-themes:
-    interface: content
-    target: $SNAP/data-dir/sounds
-    default-provider: gtk-common-themes
-
 parts:
   emacs:
-    after: [desktop-gnome-platform]
     plugin: autotools
     source: http://ftpmirror.gnu.org/emacs/emacs-26.2.tar.xz
     source-type: tar
@@ -161,16 +141,3 @@ parts:
       snapcraftctl prime
       # Fix-up application icon lookup
       sed -i.bak -e 's|^Icon=.*|Icon=share/icons/hicolor/scalable/apps/emacs.svg|g' share/applications/emacs.desktop
-
-  desktop-gnome-platform:
-    source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
-    source-subdir: gtk
-    plugin: make
-    make-parameters: ["FLAVOR=gtk3"]
-    build-packages:
-      - build-essential
-      - gettext
-      - libgtk-3-dev
-    override-build: |
-      snapcraftctl build
-      mkdir -pv $SNAPCRAFT_PART_INSTALL/gnome-platform
