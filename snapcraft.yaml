@@ -1,0 +1,176 @@
+name: emacs
+version: '26.2'
+summary: GNU Emacs is the extensible self-documenting text editor
+description: |
+  Emacs is the extensible, customizable, self-documenting real-time
+  display editor.
+base: core18
+grade: stable
+confinement: devmode
+license: GPL-3.0+
+
+environment:
+  XDG_DATA_DIRS: $SNAP/share:$XDG_DATA_DIRS
+  EMACSDATA: $SNAP/share/emacs/$SNAP_VERSION/etc
+  EMACSLOADPATH: $SNAP/share/emacs/site-lisp:$SNAP/share/emacs/$SNAP_VERSION/lisp/
+  INFOPATH: $SNAP/share/info/
+
+apps:
+  emacs:
+    command: bin/desktop-launch $SNAP/bin/emacs
+    desktop: share/applications/emacs.desktop
+  emacsclient:
+    command: emacsclient
+  ctags:
+    command: ctags
+  ebrowse:
+    command: ebrowse
+  etags:
+    command: etags
+
+plugs:
+  gnome-3-28-1804:
+    interface: content
+    target: $SNAP/gnome-platform
+    default-provider: gnome-3-28-1804
+  gtk-3-themes:
+    interface: content
+    target: $SNAP/data-dir/themes
+    default-provider: gtk-common-themes
+  icon-themes:
+    interface: content
+    target: $SNAP/data-dir/icons
+    default-provider: gtk-common-themes
+  sound-themes:
+    interface: content
+    target: $SNAP/data-dir/sounds
+    default-provider: gtk-common-themes
+
+parts:
+  emacs:
+    after: [desktop-gnome-platform]
+    plugin: autotools
+    source: http://ftpmirror.gnu.org/emacs/emacs-26.2.tar.xz
+    source-type: tar
+    build-packages:
+      - autoconf
+      - automake
+      - bsd-mailx
+      - dbus-x11
+      - debhelper
+      - dpkg-dev
+      - gnupg-agent
+      - imagemagick
+      - libacl1-dev
+      - libasound2-dev
+      - libdbus-1-dev
+      - libgif-dev
+      - libgnutls28-dev
+      - libgpm-dev
+      - libgtk-3-dev
+      - libjpeg-dev
+      - liblockfile-dev
+      - libm17n-dev
+      - libmagick++-6.q16-dev
+      - libncurses5-dev
+      - libotf-dev
+      - libpng-dev
+      - librsvg2-dev
+      - libselinux1-dev
+      - libsystemd-dev
+      - libtiff-dev
+      - libxaw7-dev
+      - libxml2-dev
+      - procps
+      - quilt
+      - sharutils
+      - texinfo
+      - xaw3dg-dev
+      - zlib1g-dev
+    stage-packages:
+      - libasound2
+      - libatk-bridge2.0-0
+      - libatspi2.0-0
+      - libcairo2
+      - libcairo-gobject2
+      - libcroco3
+      - libdatrie1
+      - libepoxy0
+      - libfftw3-double3
+      - libfontconfig1
+      - libfreetype6
+      - libgdk-pixbuf2.0-0
+      - libgif7
+      - libgomp1
+      - libgpm2
+      - libgraphite2-3
+      - libgtk-3-0
+      - libharfbuzz0b
+      - libice6
+      - libicu60
+      - libjbig0
+      - libjpeg-turbo8
+      - liblcms2-2
+      - liblockfile1
+      - liblqr-1-0
+      - libltdl7
+      - libm17n-0
+      - libmagickcore-6.q16-3
+      - libmagickwand-6.q16-3
+      - liboss4-salsa-asound2
+      - libotf0
+      - libpango-1.0-0
+      - libpangocairo-1.0-0
+      - libpangoft2-1.0-0
+      - libpixman-1-0
+      - libpng16-16
+      - librsvg2-2
+      - libsm6
+      - libthai0
+      - libtiff5
+      - libwayland-client0
+      - libwayland-cursor0
+      - libwayland-egl1
+      - libwayland-egl1-mesa
+      - libx11-6
+      - libx11-xcb1
+      - libxau6
+      - libxau6-dbg
+      - libxcb1
+      - libxcb-render0
+      - libxcb-shm0
+      - libxcomposite1
+      - libxcomposite1-dbg
+      - libxcursor1
+      - libxdamage1
+      - libxdmcp6
+      - libxext6
+      - libxext6-dbg
+      - libxfixes3
+      - libxft2
+      - libxi6
+      - libxinerama1
+      - libxinerama1-dbg
+      - libxkbcommon0
+      - libxml2
+      - libxpm4
+      - libxrandr2
+      - libxrender1
+    override-prime: |
+      set -eu
+      snapcraftctl prime
+      # Fix-up application icon lookup
+      sed -i.bak -e 's|^Icon=.*|Icon=share/icons/hicolor/scalable/apps/emacs.svg|g' share/applications/emacs.desktop
+
+  desktop-gnome-platform:
+    source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
+    source-subdir: gtk
+    plugin: make
+    make-parameters: ["FLAVOR=gtk3"]
+    build-packages:
+      - build-essential
+      - gettext
+      - libgtk-3-dev
+    override-build: |
+      snapcraftctl build
+      mkdir -pv $SNAPCRAFT_PART_INSTALL/gnome-platform
