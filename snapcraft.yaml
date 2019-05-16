@@ -16,7 +16,7 @@ description: |
 
   This snap is built using the snapcraft.yaml definition at
   https://github.com/alexmurray/emacs-snap and using the build.snapcraft.io
-  service.
+  service to ensure source and build transparency.
 
 base: core18
 grade: stable
