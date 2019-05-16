@@ -33,13 +33,13 @@ apps:
     command: bin/desktop-launch $SNAP/bin/emacs
     desktop: share/applications/emacs.desktop
   emacsclient:
-    command: emacsclient
+    command: bin/emacsclient
   ctags:
-    command: ctags
+    command: bin/ctags
   ebrowse:
-    command: ebrowse
+    command: bin/ebrowse
   etags:
-    command: etags
+    command: bin/etags
 
 parts:
   emacs:
