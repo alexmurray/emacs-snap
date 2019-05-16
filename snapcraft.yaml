@@ -4,6 +4,20 @@ summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
   display editor.
+
+  Features include:
+    * Content-aware editing modes, including syntax coloring, for many file types.
+    * Complete built-in documentation, including a tutorial for new users.
+    * Full Unicode support for nearly all human scripts.
+    * Highly customizable, using Emacs Lisp code or a graphical interface.
+    * An entire ecosystem of functionality beyond text editing, including a project
+      planner, mail and news reader, debugger interface, calendar, and more.
+    * A packaging system for downloading and installing extensions.
+
+  This snap is built using the snapcraft.yaml definition at
+  https://github.com/alexmurray/emacs-snap and using the build.snapcraft.io
+  service.
+
 base: core18
 grade: stable
 confinement: classic
@@ -29,6 +43,7 @@ apps:
 
 parts:
   emacs:
+    after: [desktop-gnome-platform]
     plugin: autotools
     source: http://ftpmirror.gnu.org/emacs/emacs-26.2.tar.xz
     source-type: tar
