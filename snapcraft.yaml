@@ -25,7 +25,9 @@ license: GPL-3.0+
 
 environment:
   EMACSDATA: $SNAP/share/emacs/$SNAP_VERSION/etc
+  EMACSDOC: $SNAP/share/emacs/$SNAP_VERSION/etc
   EMACSLOADPATH: $SNAP/share/emacs/site-lisp:$SNAP/share/emacs/$SNAP_VERSION/lisp/
+  EMACSPATH: $SNAP/libexec/emacs/$SNAP_VERSION/x86_64-pc-linux-gnu/
   INFOPATH: $SNAP/share/info/
 
 apps:
