@@ -6,7 +6,11 @@
 
 **GNU Emacs in a snap** - the extensible, customizable, self-documenting real-time display editor
 
+[![GNU Emacs](https://snapcraft.io/emacs/badge.svg)](https://snapcraft.io/emacs)
+
 ## Installation ##
+
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/emacs)
 
 ``` shell
 sudo snap install emacs --classic
