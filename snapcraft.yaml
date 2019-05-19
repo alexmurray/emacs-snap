@@ -14,9 +14,9 @@ description: |
       planner, mail and news reader, debugger interface, calendar, and more.
     * A packaging system for downloading and installing extensions.
 
-  This snap is built using the snapcraft.yaml definition at
-  https://github.com/alexmurray/emacs-snap and using the build.snapcraft.io
-  service to ensure source and build transparency.
+  This snap is built via the build.snapcraft.io service from the
+  snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
+  ensure source and build transparency.
 
 base: core18
 grade: stable
