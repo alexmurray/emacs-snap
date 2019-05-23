@@ -8,7 +8,7 @@
 
 [![GNU Emacs](https://snapcraft.io/emacs/badge.svg)](https://snapcraft.io/emacs)
 
-## Installation ([coming soon](https://forum.snapcraft.io/t/classic-confinement-name-request-and-aliases-for-emacs/11367)) ##
+## Installation ##
 
 [![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/emacs)
 
@@ -23,6 +23,7 @@ sudo snap install emacs --classic
 ```shell
 # clone this repo
 git clone https://github.com/alexmurray/emacs-snap
+cd emacs-snap
 
 # install snapcraft and multipass tooling needed to build the snap in a reproducible way
 sudo snap install snapcraft --classic
