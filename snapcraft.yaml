@@ -39,7 +39,7 @@ apps:
 parts:
   emacs:
     plugin: autotools
-    source: http://ftpmirror.gnu.org/emacs/emacs-26.2.tar.xz
+    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-26.2.tar.xz
     source-type: tar
     configflags: [--prefix=/snap/emacs/current/usr]
     organize:
