@@ -1,5 +1,5 @@
 name: emacs
-version: '26.2'
+version: '27+git'
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -37,13 +37,15 @@ apps:
     command: usr/bin/etags
 
 parts:
-  emacs:
+  emacs-git:
     plugin: autotools
-    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-26.2.tar.xz
-    source-type: tar
-    configflags: [--prefix=/snap/emacs/current/usr]
+    source: https://github.com/emacs-mirror/emacs.git
+    source-type: git
+    source-depth: 1
+    source-branch: master
+    configflags: ["--prefix=/snap/emacs-git/current/usr", "--with-xwidgets", "--with-x-toolkit=gtk3", "--without-xaw3d"]
     organize:
-      snap/emacs/current/usr: usr
+      snap/emacs-git/current/usr: usr
     build-packages:
       - autoconf
       - automake
@@ -80,12 +82,14 @@ parts:
       - texinfo
       - xaw3dg-dev
       - zlib1g-dev
+      - libjansson-dev
+      - libwebkit2gtk-4.0-dev
     stage-packages:
       - libasound2
       - libatk-bridge2.0-0
       - libatspi2.0-0
-      - libcairo2
       - libcairo-gobject2
+      - libcairo2
       - libcroco3
       - libdatrie1
       - libepoxy0
@@ -129,9 +133,9 @@ parts:
       - libx11-xcb1
       - libxau6
       - libxau6-dbg
-      - libxcb1
       - libxcb-render0
       - libxcb-shm0
+      - libxcb1
       - libxcomposite1
       - libxcomposite1-dbg
       - libxcursor1
@@ -149,6 +153,25 @@ parts:
       - libxpm4
       - libxrandr2
       - libxrender1
+      - libbrotli1
+      - libenchant1c2a
+      - libgl1
+      - libglx0
+      - libgstreamer-gl1.0-0
+      - libgstreamer-plugins-base1.0-0
+      - libgstreamer1.0-0
+      - libgudev-1.0-0
+      - libharfbuzz-icu0
+      - libhyphen0
+      - libjansson4
+      - libjavascriptcoregtk-4.0-18
+      - libnotify4
+      - liborc-0.4-0
+      - libsecret-1-0
+      - libwebkit2gtk-4.0-37
+      - libwebpdemux2
+      - libwoff1
+      - libxslt1.1
     override-prime: |
       set -eu
       snapcraftctl prime
