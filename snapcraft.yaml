@@ -1,5 +1,5 @@
 name: emacs
-version: '26.3-rc1'
+version: '26.3'
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -39,7 +39,7 @@ apps:
 parts:
   emacs:
     plugin: autotools
-    source: https://alpha.gnu.org/gnu/emacs/pretest/emacs-26.3-rc1.tar.xz
+    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-26.3.tar.xz
     source-type: tar
     configflags: [--prefix=/snap/emacs/current/usr]
     organize:
