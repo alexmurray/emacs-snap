@@ -81,6 +81,7 @@ parts:
       - xaw3dg-dev
       - zlib1g-dev
     stage-packages:
+      - gvfs
       - libasound2
       - libatk-bridge2.0-0
       - libatspi2.0-0
