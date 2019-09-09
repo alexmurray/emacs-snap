@@ -1,5 +1,5 @@
 name: emacs
-version: '27+git'
+adopt-info: emacs
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -19,7 +19,7 @@ description: |
   ensure source and build transparency.
 
 base: core18
-grade: stable
+grade: devel
 confinement: classic
 license: GPL-3.0+
 
@@ -172,6 +172,9 @@ parts:
       - libwebpdemux2
       - libwoff1
       - libxslt1.1
+    override-pull: |
+      snapcraftctl pull
+      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
     override-prime: |
       set -eu
       snapcraftctl prime
