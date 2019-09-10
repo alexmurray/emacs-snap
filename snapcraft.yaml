@@ -25,8 +25,13 @@ license: GPL-3.0+
 
 apps:
   emacs:
+    command-chain:
+      - gtk-launch
     command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
+    # Required until Snapcraft 3.9
+    # https://github.com/snapcore/snapcraft/pull/2686
+    adapter: full
   emacsclient:
     command: usr/bin/emacsclient
   ctags:
@@ -155,3 +160,8 @@ parts:
       snapcraftctl prime
       # Fix-up application icon lookup
       sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs.desktop
+  command-chain:
+    source: .
+    plugin: dump
+    stage:
+      - gtk-launch
