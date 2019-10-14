@@ -160,6 +160,11 @@ parts:
       snapcraftctl prime
       # Fix-up application icon lookup
       sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs.desktop
+  site-lisp:
+    source: site-lisp
+    plugin: dump
+    organize:
+      '*.el': usr/share/emacs/site-lisp/
   command-chain:
     source: .
     plugin: dump
