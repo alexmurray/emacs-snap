@@ -25,8 +25,13 @@ license: GPL-3.0+
 
 apps:
   emacs:
-    command: bin/desktop-launch $SNAP/usr/bin/emacs
+    command-chain:
+      - gtk-launch
+    command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
+    # Required until Snapcraft 3.9
+    # https://github.com/snapcore/snapcraft/pull/2686
+    adapter: full
   emacsclient:
     command: usr/bin/emacsclient
   ctags:
@@ -38,7 +43,6 @@ apps:
 
 parts:
   emacs:
-    after: [desktop-gtk3]
     plugin: autotools
     source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-26.3.tar.xz
     source-type: tar
@@ -156,30 +160,8 @@ parts:
       snapcraftctl prime
       # Fix-up application icon lookup
       sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs.desktop
-  desktop-gtk3:
-    source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
-    source-subdir: gtk
-    plugin: make
-    make-parameters: ["FLAVOR=gtk3"]
-    build-packages:
-      - build-essential
-      - libgtk-3-dev
-    stage-packages:
-      - libxkbcommon0  # XKB_CONFIG_ROOT
-      - ttf-ubuntu-font-family
-      - dmz-cursor-theme
-      - light-themes
-      - adwaita-icon-theme
-      - gnome-themes-standard
-      - shared-mime-info
-      - libgtk-3-0
-      - libgdk-pixbuf2.0-0
-      - libglib2.0-bin
-      - libgtk-3-bin
-      - unity-gtk3-module
-      - libappindicator3-1
-      - locales-all
-      - xdg-user-dirs
-      - ibus-gtk3
-      - libibus-1.0-5
-      - fcitx-frontend-gtk3
+  command-chain:
+    source: .
+    plugin: dump
+    stage:
+      - gtk-launch
