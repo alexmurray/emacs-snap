@@ -26,7 +26,7 @@ license: GPL-3.0+
 apps:
   emacs:
     command-chain:
-      - gtk-launch
+      - setup-env
     command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
     # Required until Snapcraft 3.9
@@ -194,4 +194,4 @@ parts:
     source: .
     plugin: dump
     stage:
-      - gtk-launch
+      - setup-env
