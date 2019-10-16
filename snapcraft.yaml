@@ -155,9 +155,16 @@ parts:
       - libxpm4
       - libxrandr2
       - libxrender1
+    override-stage: |
+      set -eu
+      snapcraftctl stage
+      # explicitly include .la files for ImageMagick
+      cp -a ../parts/emacs/install/usr/lib/x86_64-linux-gnu/ImageMagick-6.9.7/modules-Q16/coders/*.la  usr/lib/x86_64-linux-gnu/ImageMagick-6.9.7/modules-Q16/coders/
     override-prime: |
       set -eu
       snapcraftctl prime
+      # explicitly include .la files for ImageMagick
+      cp -a ../stage/usr/lib/x86_64-linux-gnu/ImageMagick-6.9.7/modules-Q16/coders/*.la  usr/lib/x86_64-linux-gnu/ImageMagick-6.9.7/modules-Q16/coders/
       # Fix-up application icon lookup
       sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs.desktop
   site-lisp:
