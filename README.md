@@ -7,6 +7,7 @@
 **GNU Emacs in a snap** - the extensible, customizable, self-documenting real-time display editor
 
 [![GNU Emacs](https://snapcraft.io/emacs/badge.svg)](https://snapcraft.io/emacs)
+[![GNU Emacs](https://snapcraft.io//emacs/trending.svg?name=0)](https://snapcraft.io/emacs)
 
 ## Installation ##
 
