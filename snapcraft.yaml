@@ -80,6 +80,7 @@ parts:
       - libtiff-dev
       - libwebkit2gtk-4.0-dev
       - libxml2-dev
+      - libxpm-dev
       - procps
       - quilt
       - sharutils
@@ -164,6 +165,7 @@ parts:
       - libxinerama1
       - libxkbcommon0
       - libxml2
+      - libxpm4
       - libxrandr2
       - libxrender1
       - libxslt1.1
