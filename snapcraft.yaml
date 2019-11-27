@@ -68,6 +68,7 @@ parts:
       - libgtk-3-dev
       - libjpeg-dev
       - liblockfile-dev
+      - liblcms2-dev
       - libm17n-dev
       - libncurses5-dev
       - liboss4-salsa2
