@@ -59,7 +59,6 @@ parts:
       - debhelper
       - dpkg-dev
       - gnupg-agent
-      - imagemagick
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
@@ -70,7 +69,6 @@ parts:
       - libjpeg-dev
       - liblockfile-dev
       - libm17n-dev
-      - libmagick++-6.q16-dev
       - libncurses5-dev
       - liboss4-salsa2
       - libotf-dev
