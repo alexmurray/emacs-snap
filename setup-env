@@ -20,7 +20,4 @@ if [ -f "$SNAP/usr/lib/$ARCH/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders" ]; then
   "$SNAP/usr/lib/$ARCH/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders" > "$GDK_PIXBUF_MODULE_FILE"
 fi
 
-# ImageMagick coders
-export MAGICK_CODER_MODULE_PATH="$SNAP/usr/lib/$ARCH/ImageMagick-6.9.7/modules-Q16/coders"
-
 exec "$@"
