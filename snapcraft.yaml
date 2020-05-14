@@ -88,19 +88,27 @@ parts:
       - zlib1g-dev
     stage-packages:
       - gvfs
+      - language-pack-en-base
       - libasound2
+      - libaspell15
+      - libasyncns0
       - libatk-bridge2.0-0
       - libatk1.0-0
       - libatspi2.0-0
       - libbrotli1
       - libcairo-gobject2
       - libcairo2
+      - libcanberra-gtk3-0
+      - libcanberra-gtk3-module
+      - libcanberra0
       - libcroco3
       - libdatrie1
+      - libdb5.3
       - libdrm2
       - libegl1
       - libenchant1c2a
       - libepoxy0
+      - libflac8
       - libfontconfig1
       - libfreetype6
       - libgbm1
@@ -127,8 +135,10 @@ parts:
       - libjpeg-turbo8
       - liblcms2-2
       - liblockfile1
+      - libltdl7
       - libm17n-0
       - libnotify4
+      - libogg0
       - liborc-0.4-0
       - libotf0
       - libpango-1.0-0
@@ -136,12 +146,21 @@ parts:
       - libpangoft2-1.0-0
       - libpixman-1-0
       - libpng16-16
+      - libpulse0
       - librsvg2-2
+      - libsasl2-2
       - libsecret-1-0
       - libsm6
+      - libsndfile1
       - libsoup2.4-1
+      - libssl1.1
+      - libstdc++6
+      - libtdb1
       - libthai0
       - libtiff5
+      - libvorbis0a
+      - libvorbisenc2
+      - libvorbisfile3
       - libwayland-client0
       - libwayland-cursor0
       - libwayland-egl1
@@ -170,6 +189,7 @@ parts:
       - libxrandr2
       - libxrender1
       - libxslt1.1
+      - libyajl2
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
