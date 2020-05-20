@@ -193,6 +193,8 @@ parts:
       - libxrender1
       - libxslt1.1
       - libyajl2
+    stage:
+      - -usr/share/emacs/site-lisp
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
