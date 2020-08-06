@@ -1,5 +1,5 @@
 name: emacs
-adopt-info: emacs
+version: 27.1-rc2
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -44,10 +44,7 @@ apps:
 parts:
   emacs:
     plugin: autotools
-    source: https://github.com/emacs-mirror/emacs.git
-    source-type: git
-    source-depth: 1
-    source-branch: emacs-27
+    source: https://alpha.gnu.org/gnu/emacs/pretest/emacs-27.1-rc2.tar.xz
     configflags: ["--prefix=/snap/emacs/current/usr", "--with-xwidgets", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
     organize:
       snap/emacs/current/usr: usr
@@ -195,9 +192,6 @@ parts:
       - libyajl2
     stage:
       - -usr/share/emacs/site-lisp
-    override-pull: |
-      snapcraftctl pull
-      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
     override-prime: |
       set -eu
       snapcraftctl prime
