@@ -1,5 +1,5 @@
 name: emacs
-adopt-info: emacs
+version: 27.1
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -19,7 +19,7 @@ description: |
   ensure source and build transparency.
 
 base: core18
-grade: devel
+grade: stable
 confinement: classic
 license: GPL-3.0+
 
@@ -44,10 +44,7 @@ apps:
 parts:
   emacs:
     plugin: autotools
-    source: https://github.com/emacs-mirror/emacs.git
-    source-type: git
-    source-depth: 1
-    source-branch: master
+    source: https://ftpmirror.gnu.org/emacs/emacs-27.1.tar.xz
     configflags: ["--prefix=/snap/emacs/current/usr", "--with-xwidgets", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
     organize:
       snap/emacs/current/usr: usr
@@ -87,19 +84,28 @@ parts:
       - texinfo
       - zlib1g-dev
     stage-packages:
+      - gvfs
+      - language-pack-en-base
       - libasound2
+      - libaspell15
+      - libasyncns0
       - libatk-bridge2.0-0
       - libatk1.0-0
       - libatspi2.0-0
       - libbrotli1
       - libcairo-gobject2
       - libcairo2
+      - libcanberra-gtk3-0
+      - libcanberra-gtk3-module
+      - libcanberra0
       - libcroco3
       - libdatrie1
+      - libdb5.3
       - libdrm2
       - libegl1
       - libenchant1c2a
       - libepoxy0
+      - libflac8
       - libfontconfig1
       - libfreetype6
       - libgbm1
@@ -126,8 +132,13 @@ parts:
       - libjpeg-turbo8
       - liblcms2-2
       - liblockfile1
+      - libltdl7
       - libm17n-0
       - libnotify4
+      - libnss-mdns
+      - libnss-myhostname
+      - libnss-systemd
+      - libogg0
       - liborc-0.4-0
       - libotf0
       - libpango-1.0-0
@@ -135,12 +146,21 @@ parts:
       - libpangoft2-1.0-0
       - libpixman-1-0
       - libpng16-16
+      - libpulse0
       - librsvg2-2
+      - libsasl2-2
       - libsecret-1-0
       - libsm6
+      - libsndfile1
       - libsoup2.4-1
+      - libssl1.1
+      - libstdc++6
+      - libtdb1
       - libthai0
       - libtiff5
+      - libvorbis0a
+      - libvorbisenc2
+      - libvorbisfile3
       - libwayland-client0
       - libwayland-cursor0
       - libwayland-egl1
@@ -169,9 +189,9 @@ parts:
       - libxrandr2
       - libxrender1
       - libxslt1.1
-    override-pull: |
-      snapcraftctl pull
-      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
+      - libyajl2
+    stage:
+      - -usr/share/emacs/site-lisp
     override-prime: |
       set -eu
       snapcraftctl prime

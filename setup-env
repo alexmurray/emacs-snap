@@ -20,4 +20,7 @@ if [ -f "$SNAP/usr/lib/$ARCH/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders" ]; then
   "$SNAP/usr/lib/$ARCH/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders" > "$GDK_PIXBUF_MODULE_FILE"
 fi
 
+# Gio modules
+export GIO_MODULE_DIR="$SNAP/usr/lib/$ARCH/gio/modules"
+
 exec "$@"
