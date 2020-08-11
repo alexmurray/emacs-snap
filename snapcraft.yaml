@@ -1,5 +1,5 @@
 name: emacs
-version: 27.1-rc2
+version: 27.1
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -19,7 +19,7 @@ description: |
   ensure source and build transparency.
 
 base: core18
-grade: devel
+grade: stable
 confinement: classic
 license: GPL-3.0+
 
@@ -44,7 +44,7 @@ apps:
 parts:
   emacs:
     plugin: autotools
-    source: https://alpha.gnu.org/gnu/emacs/pretest/emacs-27.1-rc2.tar.xz
+    source: https://ftpmirror.gnu.org/emacs/emacs-27.1.tar.xz
     configflags: ["--prefix=/snap/emacs/current/usr", "--with-xwidgets", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
     organize:
       snap/emacs/current/usr: usr
