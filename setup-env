@@ -28,6 +28,6 @@ FONTCONFIG_CACHE_DIR="$SNAP_USER_COMMON/.cache/fontconfig"
 [ ! -d "$FONTCONFIG_CACHE_DIR" ] && mkdir -p "$FONTCONFIG_CACHE_DIR"
 
 export FONTCONFIG_FILE="$SNAP_USER_COMMON/fonts.conf"
-[ ! -f "$FONTCONFIG_FILE" ] && sed "s|/var|$SNAP_USER_COMMON|" /etc/fonts/fonts.conf > "$FONTCONFIG_FILE"
+[ ! -f "$FONTCONFIG_FILE" ] && sed "s|/var|$SNAP_USER_COMMON|" "$SNAP/etc/fonts/fonts.conf" > "$FONTCONFIG_FILE"
 
 exec "$@"
