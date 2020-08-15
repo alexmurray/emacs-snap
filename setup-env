@@ -27,7 +27,16 @@ export GIO_MODULE_DIR="$SNAP/usr/lib/$ARCH/gio/modules"
 FONTCONFIG_CACHE_DIR="$SNAP_USER_COMMON/.cache/fontconfig"
 [ ! -d "$FONTCONFIG_CACHE_DIR" ] && mkdir -p "$FONTCONFIG_CACHE_DIR"
 
+# create a fontconfig file which specifies only our cache
 export FONTCONFIG_FILE="$SNAP_USER_COMMON/fonts.conf"
-[ ! -f "$FONTCONFIG_FILE" ] && sed "s|/var|$SNAP_USER_COMMON|" "$SNAP/etc/fonts/fonts.conf" > "$FONTCONFIG_FILE"
+# always recreate this to ensure we overwrite an old one which may have
+# come from a different base snap version etc in a previous release of the
+# emacs snap
+cp "$SNAP/etc/fonts/fonts.conf" "$FONTCONFIG_FILE"
+# there are usually multiple cachedir's listed - one under /var, one in
+# home etc - we only want one and we want it to be specific for the snap so
+# we don't encounter cache files created by a different version of
+# fontconfig - so replace *all* with ours
+sed -i "s|<cachedir.*/cachedir>|<cachedir>$FONTCONFIG_CACHE_DIR</cachedir>|" "$FONTCONFIG_FILE"
 
 exec "$@"
