@@ -58,11 +58,11 @@ parts:
       - dbus-x11
       - debhelper
       - dpkg-dev
-      - gcc-10
+      - gcc-9
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
-      - libgccjit-10-dev
+      - libgccjit-9-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
@@ -114,7 +114,6 @@ parts:
       - libfontconfig1
       - libfreetype6
       - libgbm1
-      - libgccjit0
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
@@ -199,7 +198,7 @@ parts:
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
-      - CC: "gcc-10"
+      - CC: "gcc-9"
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
