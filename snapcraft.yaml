@@ -42,7 +42,22 @@ apps:
     command: usr/bin/etags
 
 parts:
+  gcc-10:
+    plugin: nil
+    override-pull: 'true'
+    override-build: |
+      sudo apt --yes install software-properties-common
+
+      # Install newer GCC from Toolchain test builds PPA
+      sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/ppa
+      sudo apt update
+      sudo apt --yes install gcc-10 libgccjit-10-dev libgccjit0
+
+    override-stage: 'true'
+    override-prime: 'true'
+
   emacs:
+    after: [ gcc-10 ]
     plugin: autotools
     source: https://github.com/emacs-mirror/emacs.git
     source-type: git
@@ -58,11 +73,9 @@ parts:
       - dbus-x11
       - debhelper
       - dpkg-dev
-      - gcc-9
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
-      - libgccjit-9-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
@@ -114,6 +127,7 @@ parts:
       - libfontconfig1
       - libfreetype6
       - libgbm1
+      - libgccjit0
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
@@ -131,6 +145,7 @@ parts:
       - libhyphen0
       - libice6
       - libicu66
+      - libisl22
       - libjansson4
       - libjavascriptcoregtk-4.0-18
       - libjbig0
@@ -139,6 +154,8 @@ parts:
       - liblockfile1
       - libltdl7
       - libm17n-0
+      - libmpc3
+      - libmpfr6
       - libnotify4
       - libnss-mdns
       - libnss-myhostname
@@ -198,7 +215,7 @@ parts:
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
-      - CC: "gcc-9"
+      - CC: "gcc-10"
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
