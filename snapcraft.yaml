@@ -193,6 +193,8 @@ parts:
       - libyajl2
     stage:
       - -usr/share/emacs/site-lisp
+    build-environment:
+      - CFLAGS: "$CFLAGS -O2"
     override-prime: |
       set -eu
       snapcraftctl prime
