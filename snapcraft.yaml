@@ -217,9 +217,10 @@ parts:
     build-environment:
       - CC: "gcc-10"
       - CFLAGS: "$CFLAGS -O2"
+      - NATIVE_FULL_AOT: "1"
     override-pull: |
       snapcraftctl pull
-      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
+      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|feature/||')-$(git log -n 1 --format=%h)
     override-prime: |
       set -eu
       snapcraftctl prime
