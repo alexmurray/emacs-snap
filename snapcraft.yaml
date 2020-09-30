@@ -18,7 +18,7 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
-base: core18
+base: core20
 grade: devel
 confinement: classic
 license: GPL-3.0+
@@ -42,13 +42,28 @@ apps:
     command: usr/bin/etags
 
 parts:
+  gcc-10:
+    plugin: nil
+    override-pull: 'true'
+    override-build: |
+      sudo apt --yes install software-properties-common
+
+      # Install newer GCC from Toolchain test builds PPA
+      sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/ppa
+      sudo apt update
+      sudo apt --yes install gcc-10 libgccjit-10-dev libgccjit0
+
+    override-stage: 'true'
+    override-prime: 'true'
+
   emacs:
+    after: [ gcc-10 ]
     plugin: autotools
     source: https://github.com/emacs-mirror/emacs.git
     source-type: git
     source-depth: 1
-    source-branch: master
-    configflags: ["--prefix=/snap/emacs/current/usr", "--with-xwidgets", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
+    source-branch: feature/native-comp
+    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-xwidgets", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo", "--with-nativecomp"]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
@@ -112,6 +127,7 @@ parts:
       - libfontconfig1
       - libfreetype6
       - libgbm1
+      - libgccjit0
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
@@ -128,7 +144,8 @@ parts:
       - libharfbuzz0b
       - libhyphen0
       - libice6
-      - libicu60
+      - libicu66
+      - libisl22
       - libjansson4
       - libjavascriptcoregtk-4.0-18
       - libjbig0
@@ -137,6 +154,8 @@ parts:
       - liblockfile1
       - libltdl7
       - libm17n-0
+      - libmpc3
+      - libmpfr6
       - libnotify4
       - libnss-mdns
       - libnss-myhostname
@@ -195,11 +214,13 @@ parts:
       - libyajl2
     stage:
       - -usr/share/emacs/site-lisp
+    build-environment:
+      - CC: "gcc-10"
+      - CFLAGS: "$CFLAGS -O2"
+      - NATIVE_FULL_AOT: "1"
     override-pull: |
       snapcraftctl pull
-      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git log -n 1 --format=%h)
-    build-environment:
-      - CFLAGS: "$CFLAGS -O2"
+      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|feature/||')-$(git log -n 1 --format=%h)
     override-prime: |
       set -eu
       snapcraftctl prime
