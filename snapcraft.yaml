@@ -63,7 +63,7 @@ parts:
     source-type: git
     source-depth: 1
     source-branch: feature/native-comp
-    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-xwidgets", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo", "--with-nativecomp"]
+    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo", "--with-nativecomp"]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
@@ -93,7 +93,6 @@ parts:
       - libselinux1-dev
       - libsystemd-dev
       - libtiff-dev
-      - libwebkit2gtk-4.0-dev
       - libxml2-dev
       - libxpm-dev
       - procps
@@ -187,7 +186,6 @@ parts:
       - libwayland-cursor0
       - libwayland-egl1
       - libwayland-server0
-      - libwebkit2gtk-4.0-37
       - libwebp6
       - libwebpdemux2
       - libwoff1
