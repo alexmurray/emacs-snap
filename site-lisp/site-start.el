@@ -3,3 +3,5 @@
 (setenv "GDK_PIXBUF_MODULE_FILE")
 (setenv "GDK_PIXBUF_MODULEDIR")
 (setenv "FONTCONFIG_FILE")
+;; ensure native-comp can find the compiler
+(setq comp-native-driver-options '("-B/snap/emacs/current/usr/lib/gcc/x86_64-linux-gnu/10/"))
