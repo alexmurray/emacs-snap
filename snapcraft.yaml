@@ -110,6 +110,7 @@ parts:
       - libatk1.0-0
       - libatspi2.0-0
       - libbrotli1
+      - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0
