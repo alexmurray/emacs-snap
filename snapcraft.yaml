@@ -46,7 +46,7 @@ parts:
     plugin: autotools
     source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-27.1.tar.xz
     source-checksum: sha512/dfb26531d2c19cf9fb56505f03d799654b45e5f9528e777900e8280ed2c1d21e04c52f510528e31e015977c471ae63164cedee6174b7439ebcf479a21fc18064
-    configflags: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
+    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
