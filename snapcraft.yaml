@@ -18,7 +18,7 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
-base: core18
+base: core20
 grade: stable
 confinement: classic
 license: GPL-3.0+
