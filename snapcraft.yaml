@@ -95,6 +95,7 @@ parts:
       - libtiff-dev
       - libxml2-dev
       - libxpm-dev
+      - libxt-dev
       - procps
       - quilt
       - sharutils
