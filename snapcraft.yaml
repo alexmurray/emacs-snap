@@ -48,7 +48,7 @@ parts:
     source-type: git
     source-depth: 1
     source-branch: feature/native-comp
-    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo", "--with-nativecomp"]
+    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo", "--with-native-compilation"]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
