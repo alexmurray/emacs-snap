@@ -1,5 +1,5 @@
 name: emacs
-version: "27.1"
+version: "27.2"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -44,8 +44,8 @@ apps:
 parts:
   emacs:
     plugin: autotools
-    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-27.1.tar.xz
-    source-checksum: sha512/dfb26531d2c19cf9fb56505f03d799654b45e5f9528e777900e8280ed2c1d21e04c52f510528e31e015977c471ae63164cedee6174b7439ebcf479a21fc18064
+    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-27.2.tar.xz
+    source-checksum: sha512/0f63a5a8709b113ef790c1a64845dad05ead096f93f62164ff221c517a35b91ea7bced75a992d794981a85382cda03cca7338da2f5ef8f6ef1459b88018a4ce9
     autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
     organize:
       snap/emacs/current/usr: usr
