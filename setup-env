@@ -39,4 +39,8 @@ cp "$SNAP/etc/fonts/fonts.conf" "$FONTCONFIG_FILE"
 # fontconfig - so replace *all* with ours
 sed -i "s|<cachedir.*/cachedir>|<cachedir>$FONTCONFIG_CACHE_DIR</cachedir>|" "$FONTCONFIG_FILE"
 
+# native comp needs to find as etc and this comes from within the snap
+# itself
+export PATH="$PATH:/snap/emacs/current/usr/bin"
+
 exec "$@"

@@ -98,6 +98,7 @@ parts:
       - libatk1.0-0
       - libatspi2.0-0
       - libbrotli1
+      - libc6     # required for native-comp
       - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
@@ -116,6 +117,7 @@ parts:
       - libfreetype6
       - libgbm1
       - libgccjit0
+      - libgcc-s1
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
