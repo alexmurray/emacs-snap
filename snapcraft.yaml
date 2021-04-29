@@ -22,6 +22,7 @@ base: core20
 grade: devel
 confinement: classic
 license: GPL-3.0+
+compression: lzo
 
 apps:
   emacs:
