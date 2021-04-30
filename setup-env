@@ -13,15 +13,15 @@ fi
 GDK_CACHE_DIR="$SNAP_USER_COMMON/.cache"
 [ ! -d "$GDK_CACHE_DIR" ] && mkdir -p "$GDK_CACHE_DIR"
 
+# Export Gio modules so can be used by Gdk-pixbuf loaders below
+export GIO_MODULE_DIR="$SNAP/usr/lib/$ARCH/gio/modules"
+
 # Gdk-pixbuf loaders
 export GDK_PIXBUF_MODULE_FILE="$GDK_CACHE_DIR/gdk-pixbuf-loaders.cache"
 export GDK_PIXBUF_MODULEDIR="$SNAP/usr/lib/$ARCH/gdk-pixbuf-2.0/2.10.0/loaders"
 if [ -f "$SNAP/usr/lib/$ARCH/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders" ]; then
   "$SNAP/usr/lib/$ARCH/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders" > "$GDK_PIXBUF_MODULE_FILE"
 fi
-
-# Gio modules
-export GIO_MODULE_DIR="$SNAP/usr/lib/$ARCH/gio/modules"
 
 # setup fontconfig cache to avoid the system cache
 FONTCONFIG_CACHE_DIR="$SNAP_USER_COMMON/.cache/fontconfig"
