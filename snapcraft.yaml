@@ -30,11 +30,9 @@ apps:
       - setup-env
     command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
-    # Required until Snapcraft 3.9
-    # https://github.com/snapcore/snapcraft/pull/2686
-    adapter: full
   emacsclient:
     command: usr/bin/emacsclient
+    desktop: usr/share/applications/emacsclient.desktop
   ctags:
     command: usr/bin/ctags
   ebrowse:
@@ -214,7 +212,7 @@ parts:
       set -eu
       snapcraftctl prime
       # Fix-up application icon lookup
-      sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs.desktop
+      sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
   site-lisp:
     source: site-lisp
     plugin: dump
