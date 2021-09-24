@@ -128,7 +128,6 @@ parts:
       - libice6
       - libicu66
       - libjansson4
-      - libjavascriptcoregtk-4.0-18
       - libjbig0
       - libjpeg-turbo8
       - liblcms2-2
