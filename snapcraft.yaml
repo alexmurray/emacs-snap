@@ -45,8 +45,17 @@ parts:
     plugin: autotools
     source: https://github.com/emacs-mirror/emacs.git
     source-type: git
+    source-branch: emacs-28
     source-depth: 1
-    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo", "--with-native-compilation"]
+    autotools-configure-parameters:
+      [
+        "--prefix=/snap/emacs/current/usr",
+        "--with-x-toolkit=gtk3",
+        "--without-xaw3d",
+        "--with-modules",
+        "--with-cairo",
+        "--with-native-compilation",
+      ]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
@@ -96,7 +105,7 @@ parts:
       - libatk1.0-0
       - libatspi2.0-0
       - libbrotli1
-      - libc6     # required for native-comp
+      - libc6 # required for native-comp
       - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
@@ -216,7 +225,7 @@ parts:
     source: site-lisp
     plugin: dump
     organize:
-      '*.el': usr/share/emacs/site-lisp/
+      "*.el": usr/share/emacs/site-lisp/
   command-chain:
     source: .
     plugin: dump
