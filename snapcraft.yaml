@@ -1,4 +1,5 @@
 name: emacs
+title: GNU Emacs
 version: "27.2"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
