@@ -24,6 +24,8 @@ grade: stable
 confinement: classic
 license: GPL-3.0+
 compression: lzo
+architectures:
+  - build-on: [s390x, ppc64el, arm64, armhf, amd64]
 
 apps:
   emacs:
