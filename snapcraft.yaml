@@ -48,7 +48,6 @@ parts:
     plugin: autotools
     source: https://github.com/emacs-mirror/emacs.git
     source-type: git
-    source-branch: emacs-28
     source-depth: 1
     autotools-configure-parameters:
       [
