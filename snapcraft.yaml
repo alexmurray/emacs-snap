@@ -1,6 +1,6 @@
 name: emacs
 title: GNU Emacs
-version: "27.2"
+version: "28.1"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -25,7 +25,7 @@ confinement: classic
 license: GPL-3.0+
 compression: lzo
 architectures:
-  - build-on: [s390x, ppc64el, arm64, armhf, amd64]
+  - build-on: [ppc64el, arm64, amd64]
 
 apps:
   emacs:
@@ -33,11 +33,9 @@ apps:
       - setup-env
     command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
-    # Required until Snapcraft 3.9
-    # https://github.com/snapcore/snapcraft/pull/2686
-    adapter: full
   emacsclient:
     command: usr/bin/emacsclient
+    desktop: usr/share/applications/emacsclient.desktop
   ctags:
     command: usr/bin/ctags
   ebrowse:
@@ -48,9 +46,17 @@ apps:
 parts:
   emacs:
     plugin: autotools
-    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-27.2.tar.xz
-    source-checksum: sha512/0f63a5a8709b113ef790c1a64845dad05ead096f93f62164ff221c517a35b91ea7bced75a992d794981a85382cda03cca7338da2f5ef8f6ef1459b88018a4ce9
-    autotools-configure-parameters: ["--prefix=/snap/emacs/current/usr", "--with-x-toolkit=gtk3", "--without-xaw3d", "--with-modules", "--with-cairo"]
+    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-28.1.tar.xz
+    source-checksum: sha512/c146ff7086aba49fa6c18adf4e485a59eb4c6525fddb9d385034446830b8bb0ac9e6fb76e7b6d94a9fddc41643415f36acad57a1ae16a841c97f61bc211459d9
+    autotools-configure-parameters:
+      [
+        "--prefix=/snap/emacs/current/usr",
+        "--with-x-toolkit=gtk3",
+        "--without-xaw3d",
+        "--with-modules",
+        "--with-cairo",
+        "--with-native-compilation",
+      ]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
@@ -60,9 +66,11 @@ parts:
       - dbus-x11
       - debhelper
       - dpkg-dev
+      - gcc-10
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
+      - libgccjit-10-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
@@ -82,6 +90,7 @@ parts:
       - libtiff-dev
       - libxml2-dev
       - libxpm-dev
+      - libxt-dev
       - procps
       - quilt
       - sharutils
@@ -97,6 +106,8 @@ parts:
       - libatk1.0-0
       - libatspi2.0-0
       - libbrotli1
+      - libc6 # required for native-comp
+      - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0
@@ -113,6 +124,8 @@ parts:
       - libfontconfig1
       - libfreetype6
       - libgbm1
+      - libgccjit0
+      - libgcc-s1
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
@@ -130,6 +143,7 @@ parts:
       - libhyphen0
       - libice6
       - libicu66
+      - libisl22
       - libjansson4
       - libjbig0
       - libjpeg-turbo8
@@ -137,6 +151,8 @@ parts:
       - liblockfile1
       - libltdl7
       - libm17n-0
+      - libmpc3
+      - libmpfr6
       - libnotify4
       - libnss-mdns
       - libnss-myhostname
@@ -195,17 +211,19 @@ parts:
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
+      - CC: "gcc-10"
       - CFLAGS: "$CFLAGS -O2"
+      - NATIVE_FULL_AOT: "1"
     override-prime: |
       set -eu
       snapcraftctl prime
       # Fix-up application icon lookup
-      sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs.desktop
+      sed -i.bak -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
   site-lisp:
     source: site-lisp
     plugin: dump
     organize:
-      '*.el': usr/share/emacs/site-lisp/
+      "*.el": usr/share/emacs/site-lisp/
   command-chain:
     source: .
     plugin: dump

@@ -18,5 +18,10 @@
 (setenv "GDK_PIXBUF_MODULEDIR")
 (setenv "FONTCONFIG_FILE")
 
+;; ensure native-comp can find the compiler
+(eval-when-compile
+  (require 'comp))
+(setq native-comp-driver-options '("--sysroot=/snap/emacs/current/" "-B/snap/emacs/current/usr/lib/gcc/"))
+
 (provide 'site-start)
 ;;; site-start.el ends here
