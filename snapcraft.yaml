@@ -24,6 +24,8 @@ grade: devel
 confinement: classic
 license: GPL-3.0+
 compression: lzo
+architectures:
+  - build-on: [ppc64el, arm64, amd64]
 
 apps:
   emacs:
