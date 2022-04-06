@@ -22,8 +22,8 @@
 (eval-when-compile
   (require 'comp))
 (let ((snap (file-name-as-directory (getenv "SNAP"))))
-  (setq native-comp-driver-options (list (concat "--sysroot=" snap)
-                                         (concat "-B" snap "usr/lib/gcc/"))))
+  (setq-default native-comp-driver-options (list (concat "--sysroot=" snap)
+                                                 (concat "-B" snap "usr/lib/gcc/"))))
 
 (provide 'site-start)
 ;;; site-start.el ends here
