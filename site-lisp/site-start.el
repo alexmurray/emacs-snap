@@ -21,7 +21,9 @@
 ;; ensure native-comp can find the compiler
 (eval-when-compile
   (require 'comp))
-(setq native-comp-driver-options '("--sysroot=/snap/emacs/current/" "-B/snap/emacs/current/usr/lib/gcc/"))
+(let ((snap (file-name-as-directory (getenv "SNAP"))))
+  (setq native-comp-driver-options (list (concat "--sysroot=" snap)
+                                         (concat "-B" snap "usr/lib/gcc/"))))
 
 (provide 'site-start)
 ;;; site-start.el ends here
