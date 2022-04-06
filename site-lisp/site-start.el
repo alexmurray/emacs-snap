@@ -18,12 +18,5 @@
 (setenv "GDK_PIXBUF_MODULEDIR")
 (setenv "FONTCONFIG_FILE")
 
-;; ensure native-comp can find the compiler
-(eval-when-compile
-  (require 'comp))
-(let ((snap (file-name-as-directory (getenv "SNAP"))))
-  (setq-default native-comp-driver-options (list (concat "--sysroot=" snap)
-                                                 (concat "-B" snap "usr/lib/gcc/"))))
-
 (provide 'site-start)
 ;;; site-start.el ends here
