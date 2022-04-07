@@ -55,6 +55,7 @@ parts:
         "--with-modules",
         "--with-cairo",
         "--with-native-compilation",
+        "--with-xinput2"
       ]
     organize:
       snap/emacs/current/usr: usr
@@ -87,6 +88,7 @@ parts:
       - libselinux1-dev
       - libsystemd-dev
       - libtiff-dev
+      - libxi-dev
       - libxml2-dev
       - libxpm-dev
       - libxt-dev
