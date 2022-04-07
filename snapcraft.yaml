@@ -229,11 +229,11 @@ parts:
       # this before we compile otherwise these options get used for doing
       # the AOT compile as well - so set them afterwards just inside the
       # snap
-      rm -f usr/share/emacs/$SNAPCRAFT_PROJECT_VERSION/lisp/emacs-lisp/comp.elc
-      gunzip -f usr/share/emacs/$SNAPCRAFT_PROJECT_VERSION/lisp/emacs-lisp/comp.el.gz
-      sed -i -e 's|defcustom native-comp-driver-options nil|defcustom native-comp-driver-options (when (getenv "SNAP") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP"))) (concat "-B" (file-name-as-directory (getenv "SNAP")) "usr/lib/gcc/")))|' usr/share/emacs/$SNAPCRAFT_PROJECT_VERSION/lisp/emacs-lisp/comp.el
-      ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/$SNAPCRAFT_PROJECT_VERSION/lisp/emacs-lisp/comp.el
-      gzip usr/share/emacs/$SNAPCRAFT_PROJECT_VERSION/lisp/emacs-lisp/comp.el
+      rm -f usr/share/emacs/*/lisp/emacs-lisp/comp.elc
+      gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
+      sed -i -e 's|defcustom native-comp-driver-options nil|defcustom native-comp-driver-options (when (getenv "SNAP") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP"))) (concat "-B" (file-name-as-directory (getenv "SNAP")) "usr/lib/gcc/")))|' usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
   site-lisp:
     source: site-lisp
     plugin: dump
