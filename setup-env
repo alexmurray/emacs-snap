@@ -43,4 +43,13 @@ sed -i "s|<cachedir.*/cachedir>|<cachedir>$FONTCONFIG_CACHE_DIR</cachedir>|" "$F
 # itself
 export PATH="$PATH:/snap/emacs/current/usr/bin"
 
+# finally break out of AppArmor confinement to avoid issues like
+# https://github.com/alexmurray/emacs-snap/issues/36 - we are a classic
+# snap so snapd runs us under a complain mode profile anyway (which in
+# general doesn't restrict anything) but it does cause some applications to
+# get confused like the GNOME/Ubuntu dock
+if grep -q "^snap.emacs.[a-z-]\+ (complain)" /proc/self/attr/current; then
+  echo -n "changeprofile unconfined" > /proc/self/attr/current 2>/dev/null
+fi
+
 exec "$@"
