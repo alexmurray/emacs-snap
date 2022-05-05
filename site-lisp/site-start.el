@@ -13,10 +13,36 @@
 ;; the snap specific GIO_MODULE_DIR, GDK_PIXBUF and FONTCONFIG environment
 ;; as they likely will be linked against different libraries than what the
 ;; Emacs snap base snap is using. So make sure they are effectively unset.
-(setenv "GIO_MODULE_DIR")
-(setenv "GDK_PIXBUF_MODULE_FILE")
-(setenv "GDK_PIXBUF_MODULEDIR")
-(setenv "FONTCONFIG_FILE")
+(dolist (env '("GIO_MODULE_DIR"
+               "GDK_PIXBUF_MODULE_FILE"
+               "GDK_PIXBUF_MODULEDIR"
+               "FONTCONFIG_FILE"))
+  (setenv env))
+
+;; also unset all the various SNAP environment variables so we don't
+;; confuse any other applications that we launch (like say causing firefox
+;; to use the wrong profile - we need to unset SNAP_NAME and
+;; SNAP_INSTANCE_NAME to stop that - see
+;; https://github.com/alexmurray/emacs-snap/issues/36)
+;; TODO - don't hardcode these and instead look them up in process-environment
+(dolist (env '("SNAP_REVISION"
+               "SNAP_REAL_HOME"
+               "SNAP_USER_COMMON"
+               "SNAP_INSTANCE_KEY"
+               "SNAP_CONTEXT"
+               "SNAP_ARCH"
+               "SNAP_INSTANCE_NAME"
+               "SNAP_USER_DATA"
+               "SNAP_REEXEC"
+               "SNAP"
+               "SNAP_COMMON"
+               "SNAP_VERSION"
+               "SNAP_LIBRARY_PATH"
+               "SNAP_COOKIE"
+               "SNAP_DATA"
+               "SNAP_NAME"))
+  (setenv env))
+
 
 (provide 'site-start)
 ;;; site-start.el ends here
