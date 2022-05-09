@@ -23,8 +23,9 @@
 ;; confuse any other applications that we launch (like say causing firefox
 ;; to use the wrong profile - we need to unset SNAP_NAME and
 ;; SNAP_INSTANCE_NAME to stop that - see
-;; https://github.com/alexmurray/emacs-snap/issues/36)
-;; TODO - don't hardcode these and instead look them up in process-environment
+;; https://github.com/alexmurray/emacs-snap/issues/36).
+;; However, keep SNAP set since we use this inside our patched version of
+;; comp.el to set the path to gcc etc
 (dolist (env '("SNAP_REVISION"
                "SNAP_REAL_HOME"
                "SNAP_USER_COMMON"
@@ -34,7 +35,6 @@
                "SNAP_INSTANCE_NAME"
                "SNAP_USER_DATA"
                "SNAP_REEXEC"
-               "SNAP"
                "SNAP_COMMON"
                "SNAP_VERSION"
                "SNAP_LIBRARY_PATH"
