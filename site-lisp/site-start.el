@@ -23,11 +23,13 @@
 ;; /snap/emacs/current if $SNAP is not set for some reason - we also patch
 ;; comp.el in when building the emacs snap but do it here too to try and
 ;; ensure this is always set no matter what
-(let ((sysroot (file-name-as-directory (or (getenv "SNAP")
-                                           "/snap/emacs/current"))))
-  (dolist (opt (list (concat "--sysroot=" sysroot)
-                     (concat "-B" sysroot "usr/lib/gcc/")))
-    (add-to-list 'native-comp-driver-options opt t)))
+(when (require 'comp nil t)
+  (let ((sysroot (file-name-as-directory (or (getenv "SNAP")
+                                             "/snap/emacs/current"))))
+    (dolist (opt (list (concat "--sysroot=" sysroot)
+                       (concat "-B" sysroot "usr/lib/gcc/")))
+      (add-to-list 'native-comp-driver-options opt t))))
+
 
 ;; now that we have accessed $SNAP we can unset it - and also unset *all* the
 ;; various SNAP environment variables so we don't confuse any other
