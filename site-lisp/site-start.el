@@ -19,13 +19,21 @@
                "FONTCONFIG_FILE"))
   (setenv env))
 
-;; also unset all the various SNAP environment variables so we don't
-;; confuse any other applications that we launch (like say causing firefox
-;; to use the wrong profile - we need to unset SNAP_NAME and
-;; SNAP_INSTANCE_NAME to stop that - see
-;; https://github.com/alexmurray/emacs-snap/issues/36).
-;; However, keep SNAP set since we use this inside our patched version of
-;; comp.el to set the path to gcc etc
+;; ensure the correct native-comp-driver-options are set - use
+;; /snap/emacs/current if $SNAP is not set for some reason - we also patch
+;; comp.el in when building the emacs snap but do it here too to try and
+;; ensure this is always set no matter what
+(let ((sysroot (file-name-as-directory (or (getenv "SNAP")
+                                           "/snap/emacs/current"))))
+  (dolist (opt (list (concat "--sysroot=" sysroot)
+                     (concat "-B" sysroot "usr/lib/gcc/")))
+    (add-to-list 'native-comp-driver-options opt t)))
+
+;; now that we have accessed $SNAP we can unset it - and also unset *all* the
+;; various SNAP environment variables so we don't confuse any other
+;; applications that we launch (like say causing firefox to use the wrong
+;; profile - we need to unset SNAP_NAME and SNAP_INSTANCE_NAME to stop that
+;; - see https://github.com/alexmurray/emacs-snap/issues/36).
 (dolist (env '("SNAP_REVISION"
                "SNAP_REAL_HOME"
                "SNAP_USER_COMMON"
@@ -35,6 +43,7 @@
                "SNAP_INSTANCE_NAME"
                "SNAP_USER_DATA"
                "SNAP_REEXEC"
+               "SNAP"
                "SNAP_COMMON"
                "SNAP_VERSION"
                "SNAP_LIBRARY_PATH"
