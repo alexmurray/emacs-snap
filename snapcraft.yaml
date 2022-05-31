@@ -32,7 +32,7 @@ apps:
     command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
   emacsclient:
-    command: usr/bin/emacsclient
+    command: emacsclient
     desktop: usr/share/applications/emacsclient.desktop
   ctags:
     command: usr/bin/ctags
@@ -217,6 +217,8 @@ parts:
       snapcraftctl prime
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
+      # also fixup emacsclient.desktop file since snapd replaces the Exec= line
+      sed -i 's|Exec=.*|Exec=emacsclient %F|' usr/share/applications/emacsclient.desktop
       # ensure we hard-code the necessary arguments for
       # native-comp-driver-options in the build to try and avoid
       # https://github.com/alexmurray/emacs-snap/issues/35 - we can't do
@@ -237,4 +239,5 @@ parts:
     source: .
     plugin: dump
     stage:
+      - emacsclient
       - setup-env

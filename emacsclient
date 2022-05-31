@@ -1,0 +1,6 @@
+#!/bin/sh
+if [ -n " $*" ]; then
+  exec $SNAP/usr/bin/emacsclient --alternate-editor= --display="$DISPLAY" "$@"
+else
+  exec $SNAP/usr/bin/emacsclient --alternate-editor= --create-frame
+fi
