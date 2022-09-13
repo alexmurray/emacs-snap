@@ -100,6 +100,7 @@ parts:
     stage-packages:
       - gvfs
       - language-pack-en-base
+      - language-pack-en
       - libasound2
       - libaspell15
       - libasyncns0
