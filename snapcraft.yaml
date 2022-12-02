@@ -55,6 +55,7 @@ parts:
         "--with-modules",
         "--with-cairo",
         "--with-native-compilation",
+        "--with-pgtk",
         "--with-xinput2"
       ]
     organize:
