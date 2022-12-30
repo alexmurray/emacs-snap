@@ -86,6 +86,7 @@ parts:
       - libpng-dev
       - librsvg2-dev
       - libselinux1-dev
+      - libsqlite3-dev
       - libsystemd-dev
       - libtiff-dev
       - libxi-dev
@@ -172,6 +173,7 @@ parts:
       - libsm6
       - libsndfile1
       - libsoup2.4-1
+      - libsqlite3-0
       - libssl1.1
       - libstdc++6
       - libtdb1
