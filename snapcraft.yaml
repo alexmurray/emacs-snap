@@ -89,6 +89,7 @@ parts:
       - libselinux1-dev
       - libsystemd-dev
       - libtiff-dev
+      - libtree-sitter-dev
       - libxi-dev
       - libxml2-dev
       - libxpm-dev
@@ -178,6 +179,7 @@ parts:
       - libtdb1
       - libthai0
       - libtiff5
+      - libtree-sitter0
       - libvorbis0a
       - libvorbisenc2
       - libvorbisfile3
