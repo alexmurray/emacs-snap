@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # add logic from the upstream emacsclient.desktop script which supports
 # spawning a new frame when launched with no arguments but only do this
 # when we are launched from the desktop file which we can detect via the
@@ -7,10 +7,10 @@
 if [ -n "$GIO_LAUNCHED_DESKTOP_FILE" ] && [ "$$" -eq "$GIO_LAUNCHED_DESKTOP_FILE_PID" ]; then
   # the following is the logic from the upstream emacsclient.desktop file
   if [ -n "$*" ]; then
-    exec $SNAP/usr/bin/emacsclient --alternate-editor= --display="$DISPLAY" "$@"
+    exec "$SNAP/usr/bin/emacsclient" --alternate-editor= --display="$DISPLAY" "$@"
   else
-    exec $SNAP/usr/bin/emacsclient --alternate-editor= --create-frame
+    exec "$SNAP/usr/bin/emacsclient" --alternate-editor= --create-frame
   fi
 else
-  exec $SNAP/usr/bin/emacsclient "$@"
+  exec "$SNAP/usr/bin/emacsclient" "$@"
 fi

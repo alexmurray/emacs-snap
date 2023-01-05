@@ -19,7 +19,7 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
-base: core20
+base: core22
 grade: devel
 confinement: classic
 license: GPL-3.0+
@@ -73,11 +73,11 @@ parts:
       - dbus-x11
       - debhelper
       - dpkg-dev
-      - gcc-10
+      - gcc-11
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
-      - libgccjit-10-dev
+      - libgccjit-11-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
@@ -106,6 +106,8 @@ parts:
       - texinfo
       - zlib1g-dev
     stage-packages:
+      - bash
+      - gsettings-desktop-schemas
       - gvfs
       - libasound2
       - libaspell15
@@ -121,13 +123,14 @@ parts:
       - libcanberra-gtk3-0
       - libcanberra-gtk3-module
       - libcanberra0
-      - libcroco3
+      # - libcroco3 - not in jammy
       - libdatrie1
       - libdb5.3
       - libdrm2
       - libegl1
-      - libenchant1c2a
+      - libenchant-2-2
       - libepoxy0
+      - libexpat1
       - libflac8
       - libfontconfig1
       - libfreetype6
@@ -150,8 +153,8 @@ parts:
       - libharfbuzz0b
       - libhyphen0
       - libice6
-      - libicu66
-      - libisl22
+      - libicu70
+      - libisl23
       - libjansson4
       - libjbig0
       - libjpeg-turbo8
@@ -167,7 +170,7 @@ parts:
       - libnss-systemd
       - libogg0
       - liborc-0.4-0
-      - libotf0
+      - libotf1
       - libpango-1.0-0
       - libpangocairo-1.0-0
       - libpangoft2-1.0-0
@@ -181,7 +184,6 @@ parts:
       - libsndfile1
       - libsoup2.4-1
       - libsqlite3-0
-      - libssl1.1
       - libstdc++6
       - libtdb1
       - libthai0
@@ -193,9 +195,13 @@ parts:
       - libwayland-cursor0
       - libwayland-egl1
       - libwayland-server0
-      - libwebp6
+      - libwebp7
       - libwebpdemux2
       - libwoff1
+      - libxml2
+      - libxpm4
+      - libxslt1.1
+      - libyajl2
       - libx11-6
       - libx11-xcb1
       - libxau6
@@ -211,28 +217,21 @@ parts:
       - libxi6
       - libxinerama1
       - libxkbcommon0
-      - libxml2
-      - libxpm4
       - libxrandr2
       - libxrender1
-      - libxslt1.1
-      - libyajl2
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
-      - CC: "gcc-10"
-      - CFLAGS: "$CFLAGS -O2"
+      - CC: "gcc-11"
+      - CFLAGS: "-O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
-      snapcraftctl pull
-      snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
-    override-build: |
-      echo "$LD_LIBRARY_PATH"
-      snapcraftctl build
+      craftctl default
+      craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
     override-prime: |
       set -eu
-      snapcraftctl prime
+      craftctl default
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line
