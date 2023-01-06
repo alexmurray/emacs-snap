@@ -42,7 +42,14 @@ apps:
     command: usr/bin/etags
 
 parts:
+  tree-sitter:
+    plugin: make
+    source: https://github.com/tree-sitter/tree-sitter.git
+    source-tag: v0.20.7
+    build-environment:
+      - PREFIX: "/usr"
   emacs:
+    after: [tree-sitter]
     plugin: autotools
     source: https://github.com/emacs-mirror/emacs.git
     source-type: git
@@ -215,9 +222,13 @@ parts:
       - CC: "gcc-10"
       - CFLAGS: "$CFLAGS -O2"
       - NATIVE_FULL_AOT: "1"
+      - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
+    override-build: |
+      echo "$LD_LIBRARY_PATH"
+      snapcraftctl build
     override-prime: |
       set -eu
       snapcraftctl prime
