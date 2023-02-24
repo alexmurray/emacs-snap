@@ -51,8 +51,8 @@ parts:
   emacs:
     after: [tree-sitter]
     plugin: autotools
-    source: https://github.com/emacs-mirror/emacs.git
-    source-type: git
+    source: git://git.savannah.gnu.org/emacs.git
+    source-branch: emacs-29
     source-depth: 1
     autotools-configure-parameters:
       [
