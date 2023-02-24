@@ -227,9 +227,6 @@ parts:
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
-    override-build: |
-      echo "$LD_LIBRARY_PATH"
-      snapcraftctl build
     override-prime: |
       set -eu
       snapcraftctl prime
