@@ -44,6 +44,8 @@ apps:
 parts:
   tree-sitter:
     plugin: make
+    build-attributes:
+     - enable-patchelf
     source: https://github.com/tree-sitter/tree-sitter.git
     source-tag: v0.20.7
     build-environment:
@@ -51,6 +53,8 @@ parts:
   emacs:
     after: [tree-sitter]
     plugin: autotools
+    build-attributes:
+     - enable-patchelf
     source: https://github.com/emacs-mirror/emacs.git
     source-type: git
     source-depth: 1
@@ -73,15 +77,16 @@ parts:
       - dbus-x11
       - debhelper
       - dpkg-dev
-      - gcc-11
+      - gcc-12
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
-      - libgccjit-11-dev
+      - libgccjit-12-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
       - libgtk-3-dev
+      - libharfbuzz-dev
       - libjansson-dev
       - libjpeg-dev
       - liblcms2-dev
@@ -116,14 +121,17 @@ parts:
       - libatk1.0-0
       - libatspi2.0-0
       - libbrotli1
-      - libc6 # required for native-comp
-      - libc6-dev # required for native-comp
+      # TODO: we can't directly stage libc6 and libc6-dev into the snap as then
+      # this version of libc will be found by the loader when running binaries
+      # from the host - instead we should place these somewhere else inside the
+      # snap and set sysroot for gcc to use those to support native-comp
+      # - libc6 # required for native-comp
+      # - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0
       - libcanberra-gtk3-module
       - libcanberra0
-      # - libcroco3 - not in jammy
       - libdatrie1
       - libdb5.3
       - libdrm2
@@ -222,7 +230,7 @@ parts:
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
-      - CC: "gcc-11"
+      - CC: "gcc-12"
       - CFLAGS: "-O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
