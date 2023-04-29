@@ -74,6 +74,7 @@ parts:
       - debhelper
       - dpkg-dev
       - gcc-10
+      - g++-10
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
@@ -135,6 +136,7 @@ parts:
       - libfreetype6
       - libgbm1
       - libgccjit0
+      - libgccjit-10-dev
       - libgcc-s1
       - libgdk-pixbuf2.0-0
       - libgif7
@@ -223,6 +225,7 @@ parts:
       - -usr/share/emacs/site-lisp
     build-environment:
       - CC: "gcc-10"
+      - CXX: "g++-10"
       - CFLAGS: "$CFLAGS -O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
