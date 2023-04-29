@@ -106,6 +106,8 @@ parts:
       - texinfo
       - zlib1g-dev
     stage-packages:
+      - gcc-10 # for tree-sitter
+      - g++-10 # for tree-sitter
       - gvfs
       - libasound2
       - libaspell15
@@ -245,6 +247,15 @@ parts:
       sed -i -e 's|defcustom native-comp-driver-options nil|defcustom native-comp-driver-options (when (getenv "SNAP") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP"))) (concat "-B" (file-name-as-directory (getenv "SNAP")) "usr/lib/gcc/")))|' usr/share/emacs/*/lisp/emacs-lisp/comp.el
       ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      # also ensure we hard-code our copy of gcc-10 and g++10 for tree-sitter
+      # otherwise it will use the system installed ones which will have a
+      # different libc version and we will fail to load them
+      rm -f usr/share/emacs/*/lisp/emacs-lisp/treesit.elc
+      gunzip -f usr/share/emacs/*/lisp/emacs-lisp/treesit.el.gz
+      sed -i -E "s|\(seq-find #'executable-find '\(\"cc\".*\)\)|(concat (file-name-as-directory (getenv \"SNAP\")) \"usr/bin/gcc-10\")|" usr/share/emacs/*/lisp/emacs-lisp/treesit.el
+      sed -i -E "s|\(seq-find #'executable-find '\(\"c\+\+\".*\)\)|(concat (file-name-as-directory (getenv \"SNAP\")) \"usr/bin/g++-10\")|" usr/share/emacs/*/lisp/emacs-lisp/treesit.el
+      ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/*/lisp/emacs-lisp/treesit.el
+      gzip usr/share/emacs/*/lisp/emacs-lisp/treesit.el
   site-lisp:
     source: site-lisp
     plugin: dump
