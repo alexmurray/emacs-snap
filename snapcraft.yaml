@@ -232,10 +232,12 @@ parts:
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
+    override-build: |
       # ensure we hard-code our copy of gcc-10 and g++10 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
-      patch -p1 < $SNAPCRAFT_PART_SRC/treesit.patch
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
+      snapcraftctl build
     override-prime: |
       set -eu
       snapcraftctl prime
@@ -251,7 +253,7 @@ parts:
       # snap
       rm -f usr/share/emacs/*/lisp/emacs-lisp/comp.elc
       gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
-      patch -p1 < $SNAPCRAFT_PART_SRC/native-comp.patch
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/native-comp.patch
       ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
   site-lisp:
