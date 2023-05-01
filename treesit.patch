@@ -1,0 +1,18 @@
+diff --git a/lisp/treesit.el b/lisp/treesit.el
+index e718ea1a23a..3a313c613ee 100644
+--- a/lisp/treesit.el
++++ b/lisp/treesit.el
+@@ -2932,11 +2932,11 @@ function signals an error."
+          (default-directory (make-temp-file "treesit-workdir" t))
+          (workdir (expand-file-name "repo"))
+          (source-dir (expand-file-name (or source-dir "src") workdir))
+-         (cc (or cc (seq-find #'executable-find '("cc" "gcc" "c99"))
++         (cc (or cc (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin/gcc-10")
+                  ;; If no C compiler found, just use cc and let
+                  ;; `call-process' signal the error.
+                  "cc"))
+-         (c++ (or c++ (seq-find #'executable-find '("c++" "g++"))
++         (c++ (or c++ (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin/g++-10")
+                   "c++"))
+          (soext (or (car dynamic-library-suffixes)
+                     (signal 'treesit-error '("Emacs cannot figure out the file extension for dynamic libraries for this system, because `dynamic-library-suffixes' is nil"))))

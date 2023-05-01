@@ -1,0 +1,14 @@
+diff --git a/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el b/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el
+index e97832455b9..b04cfa00c33 100644
+--- a/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el
++++ b/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el
+@@ -186,8 +186,7 @@ and above."
+   :type '(repeat string)
+   :version "28.1")
+ 
+-(defcustom native-comp-driver-options (when (eq system-type 'darwin)
+-                                        '("-Wl,-w"))
++(defcustom native-comp-driver-options (when (getenv "SNAP") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP"))) (concat "-B" (file-name-as-directory (getenv "SNAP")) "usr/lib/gcc/")))
+   "Options passed verbatim to the native compiler's back-end driver.
+ Note that not all options are meaningful; typically only the options
+ affecting the assembler and linker are likely to be useful.
