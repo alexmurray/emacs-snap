@@ -62,7 +62,9 @@ parts:
         "--with-modules",
         "--with-cairo",
         "--with-native-compilation",
-        "--with-xinput2"
+        "--with-xinput2",
+        "--with-tree-sitter",
+        "--with-json"
       ]
     organize:
       snap/emacs/current/usr: usr
