@@ -129,8 +129,8 @@ parts:
       # this version of libc will be found by the loader when running binaries
       # from the host - instead we should place these somewhere else inside the
       # snap and set sysroot for gcc to use those to support native-comp
-      # - libc6 # required for native-comp
-      # - libc6-dev # required for native-comp
+      #- libc6 # required for native-comp
+      #- libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0
@@ -148,7 +148,7 @@ parts:
       - libfreetype6
       - libgbm1
       - libgccjit0
-      - libgccjit-10-dev
+      - libgccjit-12-dev
       - libgcc-s1
       - libgdk-pixbuf2.0-0
       - libgif7
@@ -236,7 +236,7 @@ parts:
       - -usr/share/emacs/site-lisp
     build-environment:
       - CC: "gcc-12"
-      - CXX: "g++-10"
+      - CXX: "g++-12"
       - CFLAGS: "-O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
@@ -244,7 +244,7 @@ parts:
       craftctl default
       craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
     override-build: |
-      # ensure we hard-code our copy of gcc-10 and g++10 for tree-sitter
+      # ensure we hard-code our copy of gcc-12 and g++12 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
