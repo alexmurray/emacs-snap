@@ -1,7 +1,7 @@
-diff --git a/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el b/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el
+diff --git a/usr/share/emacs/@@VERSION@@/lisp/emacs-lisp/comp.el b/usr/share/emacs/@@VERSION@@/lisp/emacs-lisp/comp.el
 index e97832455b9..b04cfa00c33 100644
---- a/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el
-+++ b/usr/share/emacs/29.0.90/lisp/emacs-lisp/comp.el
+--- a/usr/share/emacs/@@VERSION@@/lisp/emacs-lisp/comp.el
++++ b/usr/share/emacs/@@VERSION@@/lisp/emacs-lisp/comp.el
 @@ -186,8 +186,7 @@ and above."
    :type '(repeat string)
    :version "28.1")
