@@ -55,8 +55,7 @@ parts:
     plugin: autotools
     build-attributes:
      - enable-patchelf
-    source: https://github.com/emacs-mirror/emacs.git
-    source-type: git
+    source: git://git.savannah.gnu.org/emacs.git
     source-depth: 1
     autotools-configure-parameters:
       [
@@ -66,7 +65,9 @@ parts:
         "--with-modules",
         "--with-cairo",
         "--with-native-compilation",
-        "--with-xinput2"
+        "--with-xinput2",
+        "--with-tree-sitter",
+        "--with-json"
       ]
     organize:
       snap/emacs/current/usr: usr
@@ -78,6 +79,7 @@ parts:
       - debhelper
       - dpkg-dev
       - gcc-12
+      - g++-12
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
@@ -113,6 +115,8 @@ parts:
     stage-packages:
       - bash
       - gsettings-desktop-schemas
+      - gcc-12 # for tree-sitter
+      - g++-12 # for tree-sitter
       - gvfs
       - libasound2
       - libaspell15
@@ -144,6 +148,7 @@ parts:
       - libfreetype6
       - libgbm1
       - libgccjit0
+      - libgccjit-10-dev
       - libgcc-s1
       - libgdk-pixbuf2.0-0
       - libgif7
@@ -231,12 +236,19 @@ parts:
       - -usr/share/emacs/site-lisp
     build-environment:
       - CC: "gcc-12"
+      - CXX: "g++-10"
       - CFLAGS: "-O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
       craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
+    override-build: |
+      # ensure we hard-code our copy of gcc-10 and g++10 for tree-sitter
+      # otherwise it will use the system installed ones which will have a
+      # different libc version and we will fail to load them
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
+      craftctl default
     override-prime: |
       set -eu
       craftctl default
@@ -252,7 +264,9 @@ parts:
       # snap
       rm -f usr/share/emacs/*/lisp/emacs-lisp/comp.elc
       gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
-      sed -i -e 's|defcustom native-comp-driver-options nil|defcustom native-comp-driver-options (when (getenv "SNAP") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP"))) (concat "-B" (file-name-as-directory (getenv "SNAP")) "usr/lib/gcc/")))|' usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      # ensure we use the right path in the patch file
+      VERSION=$(echo usr/share/emacs/*/lisp/emacs-lisp/comp.el | cut -d / -f 4)
+      sed s/@@VERSION@@/$VERSION/g $SNAPCRAFT_PROJECT_DIR/native-comp.patch | patch -p1
       ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
   site-lisp:
