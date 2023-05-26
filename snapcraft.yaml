@@ -96,6 +96,7 @@ parts:
       - zlib1g-dev
     stage-packages:
       - gvfs
+      - ibus-gtk3
       - libasound2
       - libaspell15
       - libasyncns0
@@ -138,6 +139,7 @@ parts:
       - libharfbuzz-icu0
       - libharfbuzz0b
       - libhyphen0
+      - libibus-1.0-5
       - libice6
       - libicu66
       - libisl22
