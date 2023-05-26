@@ -62,7 +62,7 @@ parts:
         "--with-cairo",
         "--with-native-compilation",
         "--with-pgtk",
-        "--with-xinput2"
+        "--with-xinput2",
         "--with-tree-sitter",
         "--with-json"
       ]
