@@ -51,8 +51,7 @@ parts:
   emacs:
     after: [tree-sitter]
     plugin: autotools
-    source: https://github.com/emacs-mirror/emacs.git
-    source-type: git
+    source: git://git.savannah.gnu.org/emacs.git
     source-depth: 1
     autotools-configure-parameters:
       [
@@ -64,6 +63,8 @@ parts:
         "--with-native-compilation",
         "--with-pgtk",
         "--with-xinput2"
+        "--with-tree-sitter",
+        "--with-json"
       ]
     organize:
       snap/emacs/current/usr: usr
@@ -75,6 +76,7 @@ parts:
       - debhelper
       - dpkg-dev
       - gcc-10
+      - g++-10
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
@@ -94,6 +96,7 @@ parts:
       - libpng-dev
       - librsvg2-dev
       - libselinux1-dev
+      - libsqlite3-dev
       - libsystemd-dev
       - libtiff-dev
       - libxi-dev
@@ -106,7 +109,10 @@ parts:
       - texinfo
       - zlib1g-dev
     stage-packages:
+      - gcc-10 # for tree-sitter
+      - g++-10 # for tree-sitter
       - gvfs
+      - ibus-gtk3
       - libasound2
       - libaspell15
       - libasyncns0
@@ -133,6 +139,7 @@ parts:
       - libfreetype6
       - libgbm1
       - libgccjit0
+      - libgccjit-10-dev
       - libgcc-s1
       - libgdk-pixbuf2.0-0
       - libgif7
@@ -149,6 +156,7 @@ parts:
       - libharfbuzz-icu0
       - libharfbuzz0b
       - libhyphen0
+      - libibus-1.0-5
       - libice6
       - libicu66
       - libisl22
@@ -180,6 +188,7 @@ parts:
       - libsm6
       - libsndfile1
       - libsoup2.4-1
+      - libsqlite3-0
       - libssl1.1
       - libstdc++6
       - libtdb1
@@ -220,6 +229,7 @@ parts:
       - -usr/share/emacs/site-lisp
     build-environment:
       - CC: "gcc-10"
+      - CXX: "g++-10"
       - CFLAGS: "$CFLAGS -O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
@@ -227,7 +237,10 @@ parts:
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
     override-build: |
-      echo "$LD_LIBRARY_PATH"
+      # ensure we hard-code our copy of gcc-10 and g++10 for tree-sitter
+      # otherwise it will use the system installed ones which will have a
+      # different libc version and we will fail to load them
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
       snapcraftctl build
     override-prime: |
       set -eu
@@ -244,7 +257,9 @@ parts:
       # snap
       rm -f usr/share/emacs/*/lisp/emacs-lisp/comp.elc
       gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
-      sed -i -e 's|defcustom native-comp-driver-options nil|defcustom native-comp-driver-options (when (getenv "SNAP") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP"))) (concat "-B" (file-name-as-directory (getenv "SNAP")) "usr/lib/gcc/")))|' usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      # ensure we use the right path in the patch file
+      VERSION=$(echo usr/share/emacs/*/lisp/emacs-lisp/comp.el | cut -d / -f 4)
+      sed s/@@VERSION@@/$VERSION/g $SNAPCRAFT_PROJECT_DIR/native-comp.patch | patch -p1
       ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
   site-lisp:
