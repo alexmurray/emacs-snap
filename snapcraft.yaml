@@ -64,6 +64,7 @@ parts:
       - dbus-x11
       - debhelper
       - dpkg-dev
+      - gawk
       - gcc-10
       - libacl1-dev
       - libasound2-dev
