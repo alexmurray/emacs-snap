@@ -39,6 +39,15 @@ cp "$SNAP/etc/fonts/fonts.conf" "$FONTCONFIG_FILE"
 # fontconfig - so replace *all* with ours
 sed -i "s|<cachedir.*/cachedir>|<cachedir>$FONTCONFIG_CACHE_DIR</cachedir>|" "$FONTCONFIG_FILE"
 
+# immodule cache
+GTK_IM_MODULE_DIR="$GDK_CACHE_DIR/immodules"
+[ ! -d "$GTK_IM_MODULE_DIR" ] && mkdir -p "$GTK_IM_MODULE_DIR"
+
+export GTK_IM_MODULE_FILE="$GTK_IM_MODULE_DIR/immodules.cache"
+if [ -f "$SNAP/usr/lib/$ARCH/libgtk-3-0/gtk-query-immodules-3.0" ]; then
+  "$SNAP/usr/lib/$ARCH/libgtk-3-0/gtk-query-immodules-3.0" "$SNAP/usr/lib/$ARCH/gtk-3.0/3.0.0/immodules/"im-*.so > "$GTK_IM_MODULE_FILE"
+fi
+
 # native comp needs to find as etc and this comes from within the snap
 # itself
 export PATH="$PATH:/snap/emacs/current/usr/bin"

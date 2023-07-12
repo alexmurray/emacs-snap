@@ -78,6 +78,7 @@ parts:
       - dbus-x11
       - debhelper
       - dpkg-dev
+      - gawk
       - gcc-12
       - g++-12
       - libacl1-dev
@@ -118,6 +119,7 @@ parts:
       - gcc-12 # for tree-sitter
       - g++-12 # for tree-sitter
       - gvfs
+      - ibus-gtk3
       - libasound2
       - libaspell15
       - libasyncns0
@@ -165,6 +167,7 @@ parts:
       - libharfbuzz-icu0
       - libharfbuzz0b
       - libhyphen0
+      - libibus-1.0-5
       - libice6
       - libicu70
       - libisl23
