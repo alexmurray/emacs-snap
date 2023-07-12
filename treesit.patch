@@ -1,8 +1,8 @@
 diff --git a/lisp/treesit.el b/lisp/treesit.el
-index e718ea1a23a..3a313c613ee 100644
+index d7502560fea..dbdbdb193c0 100644
 --- a/lisp/treesit.el
 +++ b/lisp/treesit.el
-@@ -2932,11 +2932,11 @@ function signals an error."
+@@ -2952,11 +2952,11 @@ function signals an error."
           (default-directory (make-temp-file "treesit-workdir" t))
           (workdir (expand-file-name "repo"))
           (source-dir (expand-file-name (or source-dir "src") workdir))
@@ -16,3 +16,34 @@ index e718ea1a23a..3a313c613ee 100644
                    "c++"))
           (soext (or (car dynamic-library-suffixes)
                      (signal 'treesit-error '("Emacs cannot figure out the file extension for dynamic libraries for this system, because `dynamic-library-suffixes' is nil"))))
+@@ -2981,20 +2981,27 @@ function signals an error."
+           (message "Compiling library")
+           ;; cc -fPIC -c -I. parser.c
+           (treesit--call-process-signal
+-           cc nil t nil "-fPIC" "-c" "-I." "parser.c")
++           cc nil t nil "-fPIC" "-c" "-I."
++           "--sysroot" (file-name-as-directory (getenv "EMACS_SNAP_DIR"))
++           "parser.c")
+           ;; cc -fPIC -c -I. scanner.c
+           (when (file-exists-p "scanner.c")
+             (treesit--call-process-signal
+-             cc nil t nil "-fPIC" "-c" "-I." "scanner.c"))
++             cc nil t nil "-fPIC" "-c" "-I."
++             "--sysroot" (file-name-as-directory (getenv "EMACS_SNAP_DIR"))
++             "scanner.c"))
+           ;; c++ -fPIC -I. -c scanner.cc
+           (when (file-exists-p "scanner.cc")
+             (treesit--call-process-signal
+-             c++ nil t nil "-fPIC" "-c" "-I." "scanner.cc"))
++             c++ nil t nil "-fPIC" "-c" "-I."
++             "--sysroot" (file-name-as-directory (getenv "EMACS_SNAP_DIR"))
++             "scanner.cc"))
+           ;; cc/c++ -fPIC -shared *.o -o "libtree-sitter-${lang}.${soext}"
+           (apply #'treesit--call-process-signal
+                  (if (file-exists-p "scanner.cc") c++ cc)
+                  nil t nil
+                  `("-fPIC" "-shared"
++                   "--sysroot" ,(file-name-as-directory (getenv "EMACS_SNAP_DIR"))
+                    ,@(directory-files
+                       default-directory nil
+                       (rx bos (+ anychar) ".o" eos))
