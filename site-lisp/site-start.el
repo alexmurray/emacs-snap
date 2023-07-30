@@ -19,13 +19,15 @@
                "FONTCONFIG_FILE"))
   (setenv env))
 
-;; ensure the correct native-comp-driver-options are set - use
-;; /snap/emacs/current if $SNAP is not set for some reason - we also patch
+;; keep a proxy to the SNAP env so that our patched comp.el and treesit.el can
+;; use it - use /snap/emacs/current if $SNAP is not set for some reason
+(setenv "EMACS_SNAP_DIR" (or (getenv "SNAP") "/snap/emacs/current"))
+
+;; ensure the correct native-comp-driver-options are set -- we also patch
 ;; comp.el in when building the emacs snap but do it here too to try and
 ;; ensure this is always set no matter what
 (when (require 'comp nil t)
-  (let ((sysroot (file-name-as-directory (or (getenv "SNAP")
-                                             "/snap/emacs/current"))))
+  (let ((sysroot (file-name-as-directory (getenv "EMACS_SNAP_DIR"))))
     (dolist (opt (list (concat "--sysroot=" sysroot)
                        (concat "-B" sysroot "usr/lib/gcc/")))
       (add-to-list 'native-comp-driver-options opt t))))
