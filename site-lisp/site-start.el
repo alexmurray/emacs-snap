@@ -16,7 +16,8 @@
 (dolist (env '("GIO_MODULE_DIR"
                "GDK_PIXBUF_MODULE_FILE"
                "GDK_PIXBUF_MODULEDIR"
-               "FONTCONFIG_FILE"))
+               "FONTCONFIG_FILE"
+               "GTK_IM_MODULE_FILE"))
   (setenv env))
 
 ;; ensure the correct native-comp-driver-options are set - use
