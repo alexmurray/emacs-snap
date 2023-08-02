@@ -60,7 +60,7 @@ parts:
         "--without-xaw3d",
         "--with-modules",
         "--with-cairo",
-        "--with-native-compilation",
+        "--with-native-compilation=aot",
         "--with-xinput2",
         "--with-tree-sitter",
         "--with-json"
