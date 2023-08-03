@@ -257,7 +257,10 @@ parts:
       # ensure we use the right path in the patch file
       VERSION=$(echo usr/share/emacs/*/lisp/emacs-lisp/comp.el | cut -d / -f 4)
       sed s/@@VERSION@@/$VERSION/g $SNAPCRAFT_PROJECT_DIR/native-comp.patch | patch -p1
-      ../parts/emacs/build/src/emacs -batch -f batch-byte-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      ../parts/emacs/build/src/emacs -batch -f batch-byte+native-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      # compiled eln files get put back in the build directory - copy them over
+      # manually
+      cp ../parts/emacs/build/native-lisp/*/comp-*.eln usr/lib/emacs/*/native-lisp/*/
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
   site-lisp:
     source: site-lisp
