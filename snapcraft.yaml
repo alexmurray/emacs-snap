@@ -172,6 +172,7 @@ parts:
       - libnotify4
       - libnss-mdns
       - libnss-myhostname
+      - libnss-sss
       - libnss-systemd
       - libogg0
       - liborc-0.4-0
@@ -190,6 +191,7 @@ parts:
       - libsoup2.4-1
       - libsqlite3-0
       - libssl1.1
+      - libsss-nss-idmap0
       - libstdc++6
       - libtdb1
       - libthai0
