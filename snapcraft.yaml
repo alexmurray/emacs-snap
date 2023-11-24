@@ -112,6 +112,7 @@ parts:
     stage-packages:
       - gcc-10 # for tree-sitter
       - g++-10 # for tree-sitter
+      - gnome-settings-daemon-common # for antialiasing gsetting
       - gvfs
       - ibus-gtk3
       - libasound2
@@ -246,6 +247,7 @@ parts:
     override-prime: |
       set -eu
       snapcraftctl prime
+      glib-compile-schemas $SNAPCRAFT_PRIME/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line

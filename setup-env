@@ -48,6 +48,10 @@ if [ -f "$SNAP/usr/lib/$ARCH/libgtk-3-0/gtk-query-immodules-3.0" ]; then
   "$SNAP/usr/lib/$ARCH/libgtk-3-0/gtk-query-immodules-3.0" "$SNAP/usr/lib/$ARCH/gtk-3.0/3.0.0/immodules/"im-*.so > "$GTK_IM_MODULE_FILE"
 fi
 
+# Set XDG_DATA_DIRS so that we prefer the snap's and then the
+# the hosts gsettings schemas
+export XDG_DATA_DIRS="$SNAP/usr/share:$XDG_DATA_DIRS"
+
 # native comp needs to find as etc and this comes from within the snap
 # itself
 export PATH="$PATH:/snap/emacs/current/usr/bin"
