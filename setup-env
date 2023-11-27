@@ -48,8 +48,22 @@ if [ -f "$SNAP/usr/lib/$ARCH/libgtk-3-0/gtk-query-immodules-3.0" ]; then
   "$SNAP/usr/lib/$ARCH/libgtk-3-0/gtk-query-immodules-3.0" "$SNAP/usr/lib/$ARCH/gtk-3.0/3.0.0/immodules/"im-*.so > "$GTK_IM_MODULE_FILE"
 fi
 
-# Set XDG_DATA_DIRS so that we prefer the snap's and then the
-# the hosts gsettings schemas
+# The version of gtk that we ship references a gsetting that is now deprecated
+# so recompile the hosts gsettings schema to reenable this just for the emacs
+# snap
+if grep -q org.gnome.settings-daemon.plugins.xsettings.deprecated /usr/share/glib-2.0/schemas/org.gnome.settings-daemon.plugins.xsettings.gschema.xml 2>/dev/null; then
+  export GSETTINGS_SCHEMA_DIR="$SNAP_USER_COMMON/.local/share/glib-2.0/schemas"
+  [ ! -d "$GSETTINGS_SCHEMA_DIR" ] && mkdir -p "$GSETTINGS_SCHEMA_DIR"
+  if [ ! -f "$GSETTINGS_SCHEMA_DIR/gschemas.compiled" ]; then
+    cp /usr/share/glib-2.0/schemas/*.xml "$GSETTINGS_SCHEMA_DIR"
+    # remove the deprecated schema entry so that keys are now in the main schema
+    sed -i "/org.gnome.settings-daemon.plugins.xsettings.deprecated/d" "$GSETTINGS_SCHEMA_DIR/org.gnome.settings-daemon.plugins.xsettings.gschema.xml"
+    sed -i "0,/<\/schema>/{//d;}" "$GSETTINGS_SCHEMA_DIR/org.gnome.settings-daemon.plugins.xsettings.gschema.xml"
+    # recompile
+    $SNAP/usr/bin/glib-compile-schemas "$GSETTINGS_SCHEMA_DIR"
+  fi
+fi
+
 export XDG_DATA_DIRS="$SNAP/usr/share:$XDG_DATA_DIRS"
 
 # native comp needs to find as etc and this comes from within the snap
