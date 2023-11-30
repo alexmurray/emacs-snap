@@ -45,7 +45,7 @@ parts:
   tree-sitter:
     plugin: make
     build-attributes:
-     - enable-patchelf
+      - enable-patchelf
     source: https://github.com/tree-sitter/tree-sitter.git
     source-tag: v0.20.7
     build-environment:
@@ -54,11 +54,12 @@ parts:
     after: [tree-sitter]
     plugin: autotools
     build-attributes:
-     - enable-patchelf
+      - enable-patchelf
     source: git://git.savannah.gnu.org/emacs.git
     source-depth: 1
     autotools-configure-parameters:
       [
+        "LDFLAGS=\"-Wl,-dynamic-linker=/snap/core22/current/lib64/ld-linux-x86-64.so.2 -Wl,-rpath=/snap/emacs/current/lib:/snap/emacs/current/usr/lib:/snap/emacs/current/lib/x86_64-linux-gnu:/snap/emacs/current/usr/lib/x86_64-linux-gnu:/snap/core22/current/lib/x86_64-linux-gnu\"",
         "--prefix=/snap/emacs/current/usr",
         "--with-x-toolkit=gtk3",
         "--without-xaw3d",
@@ -67,7 +68,7 @@ parts:
         "--with-native-compilation=aot",
         "--with-xinput2",
         "--with-tree-sitter",
-        "--with-json"
+        "--with-json",
       ]
     organize:
       snap/emacs/current/usr: usr
@@ -114,7 +115,6 @@ parts:
       - texinfo
       - zlib1g-dev
     stage-packages:
-      - bash
       - gsettings-desktop-schemas
       - gcc-12 # for tree-sitter
       - g++-12 # for tree-sitter
@@ -126,13 +126,14 @@ parts:
       - libatk-bridge2.0-0
       - libatk1.0-0
       - libatspi2.0-0
+      - libblkid1
       - libbrotli1
       # TODO: we can't directly stage libc6 and libc6-dev into the snap as then
       # this version of libc will be found by the loader when running binaries
       # from the host - instead we should place these somewhere else inside the
       # snap and set sysroot for gcc to use those to support native-comp
-      #- libc6 # required for native-comp
-      #- libc6-dev # required for native-comp
+      - libc6 # required for native-comp
+      - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0
@@ -152,11 +153,13 @@ parts:
       - libgccjit0
       - libgccjit-12-dev
       - libgcc-s1
+      - libgcrypt20
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
       - libglvnd0
       - libglx0
+      - libgpg-error0
       - libgpm2
       - libgraphite2-3
       - libgstreamer-gl1.0-0
@@ -178,6 +181,7 @@ parts:
       - liblockfile1
       - libltdl7
       - libm17n-0
+      - libmount1
       - libmpc3
       - libmpfr6
       - libnotify4
@@ -187,9 +191,11 @@ parts:
       - libogg0
       - liborc-0.4-0
       - libotf1
+      - libp11-kit0
       - libpango-1.0-0
       - libpangocairo-1.0-0
       - libpangoft2-1.0-0
+      - libpcre3
       - libpixman-1-0
       - libpng16-16
       - libpulse0
@@ -204,6 +210,7 @@ parts:
       - libtdb1
       - libthai0
       - libtiff5
+      - libuuid1
       - libvorbis0a
       - libvorbisenc2
       - libvorbisfile3
@@ -243,6 +250,7 @@ parts:
       - CFLAGS: "-O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
+      - LDFLAGS: "-Wl,-dynamic-linker=/snap/core22/current/lib64/ld-linux-x86-64.so.2 -Wl,-rpath=/snap/emacs/current/lib:/snap/emacs/current/usr/lib:/snap/emacs/current/lib/x86_64-linux-gnu:/snap/emacs/current/usr/lib/x86_64-linux-gnu:/snap/core22/current/lib/x86_64-linux-gnu"
     override-pull: |
       craftctl default
       craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
@@ -265,16 +273,19 @@ parts:
       # this before we compile otherwise these options get used for doing
       # the AOT compile as well - so set them afterwards just inside the
       # snap
-      rm -f usr/share/emacs/*/lisp/emacs-lisp/comp.elc
-      gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
-      # ensure we use the right path in the patch file
-      VERSION=$(echo usr/share/emacs/*/lisp/emacs-lisp/comp.el | cut -d / -f 4)
-      sed s/@@VERSION@@/$VERSION/g $SNAPCRAFT_PROJECT_DIR/native-comp.patch | patch -p1
-      ../parts/emacs/build/src/emacs -batch -f batch-byte+native-compile usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      VERSION=$(ls -1 usr/share/emacs/*/lisp/emacs-lisp/comp.el* | head -n1 | cut -d / -f 4)
+      rm -f usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.elc
+      [ -f usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el.gz ] && gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
+      # check if patched first so we can run prime stage multiple times when
+      # iterating on changes
+      grep -q SNAP usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el || sed s/@@VERSION@@/$VERSION/g $SNAPCRAFT_PROJECT_DIR/native-comp.patch | patch -p1
+      ../parts/emacs/build/src/emacs -batch -f batch-byte+native-compile usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el
       # compiled eln files get put back in the build directory - copy them over
       # manually
-      cp ../parts/emacs/build/native-lisp/*/comp-*.eln usr/lib/emacs/*/native-lisp/*/
-      gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
+      VERSION_HASH=$(ls -1d ../parts/emacs/build/native-lisp/$VERSION-*/ | cut -d / -f 6)
+      cp ../parts/emacs/build/native-lisp/$VERSION_HASH/comp-*.eln usr/lib/emacs/$VERSION/native-lisp/$VERSION_HASH/
+      gzip usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el
+  
   site-lisp:
     source: site-lisp
     plugin: dump
@@ -283,6 +294,13 @@ parts:
   command-chain:
     source: .
     plugin: dump
+    build-attributes:
+      - enable-patchelf
+    build-packages:
+      - gcc
+    override-build: |
+      gcc -Wl,-dynamic-linker=/snap/core22/current/lib64/ld-linux-x86-64.so.2 -Wl,-rpath=/snap/core22/current/lib/x86_64-linux-gnu setup-env.c -o $SNAPCRAFT_PART_INSTALL/setup-env
+      cp emacsclient $SNAPCRAFT_PART_INSTALL
     stage:
       - emacsclient
       - setup-env
