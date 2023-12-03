@@ -29,7 +29,7 @@ apps:
   emacs:
     command-chain:
       - setup-env
-    command: usr/bin/emacs
+    command: emacs
     desktop: usr/share/applications/emacs.desktop
   emacsclient:
     command: emacsclient
@@ -50,26 +50,15 @@ parts:
       - PREFIX: "/usr"
   emacs:
     after: [tree-sitter]
-    plugin: autotools
+    plugin: nil
     source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-29.1.tar.xz
     source-checksum: sha256/d2f881a5cc231e2f5a03e86f4584b0438f83edd7598a09d24a21bd8d003e2e01
-    autotools-configure-parameters:
-      [
-        "--prefix=/snap/emacs/current/usr",
-        "--with-x-toolkit=gtk3",
-        "--without-xaw3d",
-        "--with-modules",
-        "--with-cairo",
-        "--with-native-compilation=aot",
-        "--with-xinput2",
-        "--with-tree-sitter",
-        "--with-json"
-      ]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
       - autoconf
       - automake
+      - autopoint
       - bsd-mailx
       - dbus-x11
       - debhelper
@@ -99,6 +88,7 @@ parts:
       - libsqlite3-dev
       - libsystemd-dev
       - libtiff-dev
+      - libtool
       - libxi-dev
       - libxml2-dev
       - libxpm-dev
@@ -144,6 +134,8 @@ parts:
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
+      - libglib2.0-0
+      - libglib2.0-bin
       - libglvnd0
       - libglx0
       - libgpm2
@@ -240,10 +232,55 @@ parts:
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
-      snapcraftctl build
+
+      # build without pgtk as well
+      env NOCONFIGURE=1 ./autogen.sh
+      make distclean
+      ./configure \
+        --prefix=/snap/emacs/current/usr \
+        --with-x-toolkit=gtk3 \
+        --without-xaw3d \
+        --with-modules \
+        --with-cairo \
+        --with-native-compilation=aot \
+        --without-pgtk \
+        --with-xinput2 \
+        --with-tree-sitter \
+        --with-json
+      make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
+      cp src/emacs src/emacs-gtk
+      cp src/emacs.pdmp src/emacs-gtk.pdmp
+
+      # then build with pgtk for wayland
+      env NOCONFIGURE=1 ./autogen.sh
+      ./configure \
+        --prefix=/snap/emacs/current/usr \
+        --with-x-toolkit=gtk3 \
+        --without-xaw3d \
+        --with-modules \
+        --with-cairo \
+        --with-native-compilation=aot \
+        --with-pgtk \
+        --with-xinput2 \
+        --with-tree-sitter \
+        --with-json
+      make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
+      cp src/emacs src/emacs-wayland
+      cp src/emacs.pdmp src/emacs-wayland.pdmp
+
+      make install DESTDIR="${SNAPCRAFT_PART_INSTALL}"
+
+      for backend in gtk wayland; do
+        install -m 0755 src/emacs-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
+        # cheat by using the already installed pdmp file from above as a template
+        pdmp_dir=$(dirname $(ls -1 $SNAPCRAFT_PART_INSTALL/snap/emacs/current/usr/libexec/emacs/*/*/emacs-*.pdmp | head -n1))
+        install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
+        ln -sf "emacs-$backend.pdmp" "${pdmp_dir}/emacs-$backend-$(src/emacs-$backend --fingerprint).pdmp"
+      done
     override-prime: |
       set -eu
       snapcraftctl prime
+      glib-compile-schemas $SNAPCRAFT_PRIME/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line
@@ -275,3 +312,4 @@ parts:
     stage:
       - emacsclient
       - setup-env
+      - emacs
