@@ -19,7 +19,8 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
-base: core22
+build-base: core22
+base: bare
 grade: devel
 confinement: classic
 license: GPL-3.0+
@@ -59,7 +60,6 @@ parts:
     source-depth: 1
     autotools-configure-parameters:
       [
-        "LDFLAGS=\"-Wl,-dynamic-linker=/snap/core22/current/lib64/ld-linux-x86-64.so.2 -Wl,-rpath=/snap/emacs/current/lib:/snap/emacs/current/usr/lib:/snap/emacs/current/lib/x86_64-linux-gnu:/snap/emacs/current/usr/lib/x86_64-linux-gnu:/snap/core22/current/lib/x86_64-linux-gnu\"",
         "--prefix=/snap/emacs/current/usr",
         "--with-x-toolkit=gtk3",
         "--without-xaw3d",
@@ -114,12 +114,17 @@ parts:
       - sharutils
       - texinfo
       - zlib1g-dev
+    stage-snaps:
+      - core22
     stage-packages:
       - gsettings-desktop-schemas
       - gcc-12 # for tree-sitter
       - g++-12 # for tree-sitter
       - gvfs
+      - gvfs-libs
       - ibus-gtk3
+      - libacl1
+      - libattr1
       - libasound2
       - libaspell15
       - libasyncns0
@@ -128,11 +133,12 @@ parts:
       - libatspi2.0-0
       - libblkid1
       - libbrotli1
+      - libbsd0
       # TODO: we can't directly stage libc6 and libc6-dev into the snap as then
       # this version of libc will be found by the loader when running binaries
       # from the host - instead we should place these somewhere else inside the
       # snap and set sysroot for gcc to use those to support native-comp
-      - libc6 # required for native-comp
+      #- libc6 # required for native-comp
       - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
@@ -142,10 +148,12 @@ parts:
       - libdatrie1
       - libdb5.3
       - libdrm2
+      - libdevmapper1.02.1
       - libegl1
       - libenchant-2-2
       - libepoxy0
       - libexpat1
+      - libffi8
       - libflac8
       - libfontconfig1
       - libfreetype6
@@ -154,11 +162,25 @@ parts:
       - libgccjit-12-dev
       - libgcc-s1
       - libgcrypt20
+      - libgd3
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
+      - libglib2.0-0
       - libglvnd0
       - libglx0
+      - libgmp10
+      - libgnutls30
+      - libhogweed6
+      - libidn2-0
+      - liblz4-1
+      - libmd0
+      - libnettle8
+      - libpcre2-8-0
+      - libsystemd0
+      - libtasn1-6
+      - libunistring2
+      - libzstd1
       - libgpg-error0
       - libgpm2
       - libgraphite2-3
@@ -177,6 +199,7 @@ parts:
       - libjansson4
       - libjbig0
       - libjpeg-turbo8
+      - libcom-err2
       - liblcms2-2
       - liblockfile1
       - libltdl7
@@ -189,6 +212,16 @@ parts:
       - libnss-myhostname
       - libnss-systemd
       - libogg0
+      - libedit2
+      - libelf1
+      - libreadline8
+      - libncursesw6
+      - libkeyutils1
+      - libtinfo6
+      - libbz2-1.0
+      - libdbus-1-3
+      - liblzma5
+      - libcap2
       - liborc-0.4-0
       - libotf1
       - libp11-kit0
@@ -202,6 +235,7 @@ parts:
       - librsvg2-2
       - libsasl2-2
       - libsecret-1-0
+      - libselinux1
       - libsm6
       - libsndfile1
       - libsoup2.4-1
@@ -242,6 +276,7 @@ parts:
       - libxkbcommon0
       - libxrandr2
       - libxrender1
+      - zlib1g
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
@@ -250,7 +285,6 @@ parts:
       - CFLAGS: "-O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
-      - LDFLAGS: "-Wl,-dynamic-linker=/snap/core22/current/lib64/ld-linux-x86-64.so.2 -Wl,-rpath=/snap/emacs/current/lib:/snap/emacs/current/usr/lib:/snap/emacs/current/lib/x86_64-linux-gnu:/snap/emacs/current/usr/lib/x86_64-linux-gnu:/snap/core22/current/lib/x86_64-linux-gnu"
     override-pull: |
       craftctl default
       craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
@@ -260,7 +294,7 @@ parts:
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
       craftctl default
-    override-prime: |
+    override-stage: |
       set -eu
       craftctl default
       # Fix-up application icon lookup
@@ -285,22 +319,20 @@ parts:
       VERSION_HASH=$(ls -1d ../parts/emacs/build/native-lisp/$VERSION-*/ | cut -d / -f 6)
       cp ../parts/emacs/build/native-lisp/$VERSION_HASH/comp-*.eln usr/lib/emacs/$VERSION/native-lisp/$VERSION_HASH/
       gzip usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el
-  
   site-lisp:
     source: site-lisp
     plugin: dump
     organize:
       "*.el": usr/share/emacs/site-lisp/
-  command-chain:
-    source: .
-    plugin: dump
+  setup-env:
+    source: setup-env
+    plugin: make
     build-attributes:
       - enable-patchelf
-    build-packages:
-      - gcc
-    override-build: |
-      gcc -Wl,-dynamic-linker=/snap/core22/current/lib64/ld-linux-x86-64.so.2 -Wl,-rpath=/snap/core22/current/lib/x86_64-linux-gnu setup-env.c -o $SNAPCRAFT_PART_INSTALL/setup-env
-      cp emacsclient $SNAPCRAFT_PART_INSTALL
+    stage:
+      - setup-env
+  scripts:
+    source: .
+    plugin: dump
     stage:
       - emacsclient
-      - setup-env
