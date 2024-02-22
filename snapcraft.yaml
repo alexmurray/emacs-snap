@@ -233,6 +233,10 @@ parts:
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
 
+      # also hard-code the name of our emacs binaries to emacs rather than
+      # emacs-wayland etc
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-name.patch
+
       # build without pgtk as well
       env NOCONFIGURE=1 ./autogen.sh
       make distclean
