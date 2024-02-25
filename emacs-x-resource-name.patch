@@ -1,0 +1,57 @@
+diff --git a/src/pgtkfns.c b/src/pgtkfns.c
+index 5f806e18090..abfc239a2c5 100644
+--- a/src/pgtkfns.c
++++ b/src/pgtkfns.c
+@@ -155,7 +155,7 @@ pgtk_display_info_for_name (Lisp_Object name)
+     }
+ 
+   /* Use this general default value to start with.  */
+-  Vx_resource_name = Vinvocation_name;
++  Vx_resource_name = build_string ("emacs");
+ 
+   validate_x_resource_name ();
+ 
+@@ -1218,7 +1218,7 @@ This function is an internal primitive--use `make-frame' instead.  */ )
+ 
+   /* Use this general default value to start with
+      until we know if this frame has a specified name.  */
+-  Vx_resource_name = Vinvocation_name;
++  Vx_resource_name = build_string("emacs");
+ 
+   display =
+     gui_display_get_arg (dpyinfo, parms, Qterminal, 0, 0, RES_TYPE_NUMBER);
+diff --git a/src/xfns.c b/src/xfns.c
+index 5a618908be1..19343ea8f82 100644
+--- a/src/xfns.c
++++ b/src/xfns.c
+@@ -4629,7 +4629,7 @@ This function is an internal primitive--use `make-frame' instead.  */)
+ 
+   /* Use this general default value to start with
+      until we know if this frame has a specified name.  */
+-  Vx_resource_name = Vinvocation_name;
++  Vx_resource_name = build_string ("emacs");
+ 
+   display = gui_display_get_arg (dpyinfo, parms, Qterminal, 0, 0,
+                                  RES_TYPE_NUMBER);
+@@ -7281,7 +7281,7 @@ x_display_info_for_name (Lisp_Object name)
+       return dpyinfo;
+ 
+   /* Use this general default value to start with.  */
+-  Vx_resource_name = Vinvocation_name;
++  Vx_resource_name = build_string ("emacs");
+ 
+   validate_x_resource_name ();
+ 
+diff --git a/src/xterm.c b/src/xterm.c
+index 524e2a32574..22d319c5999 100644
+--- a/src/xterm.c
++++ b/src/xterm.c
+@@ -29489,7 +29489,7 @@ x_term_init (Lisp_Object display_name, char *xrm_option, char *resource_name)
+           argv[argc] = 0;
+ 
+         argc = 0;
+-        argv[argc++] = initial_argv[0];
++        argv[argc++] = "emacs";
+ 
+         if (! NILP (display_name))
+           {

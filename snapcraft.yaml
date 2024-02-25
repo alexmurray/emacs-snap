@@ -233,9 +233,9 @@ parts:
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
 
-      # also hard-code the name of our emacs binaries to emacs rather than
-      # emacs-wayland etc
-      patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-name.patch
+      # also hard-code the default x resource name to emacs rather than using
+      # the invocation name (which is emacs-gtk or similar)
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-x-resource-name.patch
 
       # build without pgtk as well
       env NOCONFIGURE=1 ./autogen.sh
@@ -281,10 +281,10 @@ parts:
         install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
         ln -sf "emacs-$backend.pdmp" "${pdmp_dir}/emacs-$backend-$(src/emacs-$backend --fingerprint).pdmp"
       done
-    override-prime: |
+    override-stage: |
       set -eu
-      snapcraftctl prime
-      glib-compile-schemas $SNAPCRAFT_PRIME/usr/share/glib-2.0/schemas/
+      snapcraftctl stage
+      glib-compile-schemas $SNAPCRAFT_STAGE/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line
