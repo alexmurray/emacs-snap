@@ -43,7 +43,7 @@ index 5a618908be1..19343ea8f82 100644
    validate_x_resource_name ();
  
 diff --git a/src/xterm.c b/src/xterm.c
-index 524e2a32574..22d319c5999 100644
+index 524e2a32574..b30ff50f97c 100644
 --- a/src/xterm.c
 +++ b/src/xterm.c
 @@ -29489,7 +29489,7 @@ x_term_init (Lisp_Object display_name, char *xrm_option, char *resource_name)
@@ -55,3 +55,11 @@ index 524e2a32574..22d319c5999 100644
  
          if (! NILP (display_name))
            {
+@@ -29514,6 +29514,7 @@ x_term_init (Lisp_Object display_name, char *xrm_option, char *resource_name)
+         /* gtk_init does set_locale.  Fix locale before and after.  */
+         fixup_locale ();
+         unrequest_sigio (); /* See comment in x_display_ok.  */
++        g_set_prgname ("emacs");
+         gtk_init (&argc, &argv2);
+         request_sigio ();
+ 
