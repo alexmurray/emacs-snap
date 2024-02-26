@@ -1,3 +1,29 @@
+diff --git a/lisp/term/pgtk-win.el b/lisp/term/pgtk-win.el
+index 2e03e7f57a5..a816224b703 100644
+--- a/lisp/term/pgtk-win.el
++++ b/lisp/term/pgtk-win.el
+@@ -116,7 +116,7 @@ DISPLAY is the name of the display Emacs should connect to."
+   (when (boundp 'x-resource-name)
+     (unless (stringp x-resource-name)
+       (let (i)
+-	(setq x-resource-name (copy-sequence invocation-name))
++	(setq x-resource-name (copy-sequence "emacs"))
+ 
+ 	;; Change any . or * characters in x-resource-name to hyphens,
+ 	;; so as not to choke when we use it in X resource queries.
+diff --git a/lisp/term/x-win.el b/lisp/term/x-win.el
+index 98dd576fea2..ac1fae6d600 100644
+--- a/lisp/term/x-win.el
++++ b/lisp/term/x-win.el
+@@ -1231,7 +1231,7 @@ This returns an error if any Emacs frames are X frames."
+   ;; Make sure we have a valid resource name.
+   (or (stringp x-resource-name)
+       (let (i)
+-	(setq x-resource-name (copy-sequence invocation-name))
++	(setq x-resource-name (copy-sequence "emacs"))
+ 
+ 	;; Change any . or * characters in x-resource-name to hyphens,
+ 	;; so as not to choke when we use it in X resource queries.
 diff --git a/src/pgtkfns.c b/src/pgtkfns.c
 index 5f806e18090..abfc239a2c5 100644
 --- a/src/pgtkfns.c
