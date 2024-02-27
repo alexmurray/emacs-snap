@@ -254,6 +254,7 @@ parts:
         --with-json
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
       cp src/emacs src/emacs-wayland
+      cp lib-src/emacsclient lib-src/emacsclient-wayland
       cp src/emacs.pdmp src/emacs-wayland.pdmp
 
       # then build without pgtk as well
@@ -272,12 +273,14 @@ parts:
         --with-json
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
       cp src/emacs src/emacs-gtk
+      cp lib-src/emacsclient lib-src/emacsclient-gtk
       cp src/emacs.pdmp src/emacs-gtk.pdmp
 
       make install DESTDIR="${SNAPCRAFT_PART_INSTALL}"
 
       for backend in gtk wayland; do
         install -m 0755 src/emacs-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
+        install -m 0755 lib-src/emacsclient-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
         # cheat by using the already installed pdmp file from above as a template
         pdmp_dir=$(dirname $(ls -1 $SNAPCRAFT_PART_INSTALL/snap/emacs/current/usr/libexec/emacs/*/*/emacs-*.pdmp | head -n1))
         install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
