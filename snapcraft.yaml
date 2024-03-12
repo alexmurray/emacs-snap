@@ -122,7 +122,8 @@ parts:
       - libdb5.3
       - libdrm2
       - libegl1
-      - libenchant1c2a
+      - libenchant-2-2
+      - libenchant-2-dev # for https://github.com/alexmurray/emacs-snap/issues/71
       - libepoxy0
       - libflac8
       - libfontconfig1
