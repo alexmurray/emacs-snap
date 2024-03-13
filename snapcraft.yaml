@@ -313,7 +313,7 @@ parts:
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
 
       # fix up paths in the various pkg-config files that we ship
-      find $SNAPCRAFT_STAGE -name *.pc -exec sed -i 's|prefix=/root/stage|prefix=/snap/emacs/current|' {} \;
+      find $SNAPCRAFT_STAGE -name *.pc -exec sed -i "s|prefix=$SNAPCRAFT_STAGE|prefix=/snap/emacs/current|" {} \;
   site-lisp:
     source: site-lisp
     plugin: dump
