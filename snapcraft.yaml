@@ -63,7 +63,6 @@ parts:
         "--with-native-compilation=aot",
         "--with-xinput2",
         "--with-tree-sitter",
-        "--with-json"
       ]
     organize:
       snap/emacs/current/usr: usr
@@ -85,7 +84,6 @@ parts:
       - libgnutls28-dev
       - libgpm-dev
       - libgtk-3-dev
-      - libjansson-dev
       - libjpeg-dev
       - liblcms2-dev
       - liblockfile-dev
@@ -160,7 +158,6 @@ parts:
       - libice6
       - libicu66
       - libisl22
-      - libjansson4
       - libjbig0
       - libjpeg-turbo8
       - liblcms2-2
