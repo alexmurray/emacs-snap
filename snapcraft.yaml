@@ -29,7 +29,7 @@ apps:
   emacs:
     command-chain:
       - setup-env
-    command: usr/bin/emacs
+    command: emacs
     desktop: usr/share/applications/emacs.desktop
   emacsclient:
     command: emacsclient
@@ -50,25 +50,15 @@ parts:
       - PREFIX: "/usr"
   emacs:
     after: [tree-sitter]
-    plugin: autotools
+    plugin: nil
     source: git://git.savannah.gnu.org/emacs.git
     source-depth: 1
-    autotools-configure-parameters:
-      [
-        "--prefix=/snap/emacs/current/usr",
-        "--with-x-toolkit=gtk3",
-        "--without-xaw3d",
-        "--with-modules",
-        "--with-cairo",
-        "--with-native-compilation=aot",
-        "--with-xinput2",
-        "--with-tree-sitter",
-      ]
     organize:
       snap/emacs/current/usr: usr
     build-packages:
       - autoconf
       - automake
+      - autopoint
       - bsd-mailx
       - dbus-x11
       - debhelper
@@ -97,6 +87,7 @@ parts:
       - libsqlite3-dev
       - libsystemd-dev
       - libtiff-dev
+      - libtool
       - libxi-dev
       - libxml2-dev
       - libxpm-dev
@@ -130,7 +121,8 @@ parts:
       - libdb5.3
       - libdrm2
       - libegl1
-      - libenchant1c2a
+      - libenchant-2-2
+      - libenchant-2-dev # for https://github.com/alexmurray/emacs-snap/issues/71
       - libepoxy0
       - libflac8
       - libfontconfig1
@@ -142,6 +134,8 @@ parts:
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
+      - libglib2.0-0
+      - libglib2.0-bin
       - libglvnd0
       - libglx0
       - libgpm2
@@ -235,15 +229,65 @@ parts:
     override-pull: |
       snapcraftctl pull
       snapcraftctl set-version $(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
-    override-build: |
       # ensure we hard-code our copy of gcc-10 and g++10 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
-      snapcraftctl build
-    override-prime: |
+
+      # also hard-code the default x resource name to emacs rather than using
+      # the invocation name (which is emacs-gtk or similar)
+      patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-x-resource-name.patch
+
+    override-build: |
+      # build with pgtk for wayland
+      env NOCONFIGURE=1 ./autogen.sh
+      ./configure \
+        --prefix=/snap/emacs/current/usr \
+        --with-x-toolkit=gtk3 \
+        --without-xaw3d \
+        --with-modules \
+        --with-cairo \
+        --with-native-compilation=aot \
+        --with-pgtk \
+        --with-xinput2 \
+        --with-tree-sitter
+      env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
+      cp src/emacs src/emacs-wayland
+      cp lib-src/emacsclient lib-src/emacsclient-wayland
+      cp src/emacs.pdmp src/emacs-wayland.pdmp
+
+      # then build without pgtk as well
+      env NOCONFIGURE=1 ./autogen.sh
+      make distclean
+      ./configure \
+        --prefix=/snap/emacs/current/usr \
+        --with-x-toolkit=gtk3 \
+        --without-xaw3d \
+        --with-modules \
+        --with-cairo \
+        --with-native-compilation=aot \
+        --without-pgtk \
+        --with-xinput2 \
+        --with-tree-sitter
+      env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
+      cp src/emacs src/emacs-gtk
+      cp lib-src/emacsclient lib-src/emacsclient-gtk
+      cp src/emacs.pdmp src/emacs-gtk.pdmp
+
+      make install DESTDIR="${SNAPCRAFT_PART_INSTALL}"
+
+      for backend in gtk wayland; do
+        install -m 0755 src/emacs-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
+        install -m 0755 lib-src/emacsclient-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
+        # cheat by using the already installed pdmp file from above as a template
+        pdmp_dir=$(dirname $(ls -1 $SNAPCRAFT_PART_INSTALL/snap/emacs/current/usr/libexec/emacs/*/*/emacs-*.pdmp | head -n1))
+        install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
+        ln -sf "emacs-$backend.pdmp" "${pdmp_dir}/emacs-$backend-$(src/emacs-$backend --fingerprint).pdmp"
+      done
+    override-stage: |
       set -eu
-      snapcraftctl prime
+      snapcraftctl stage
+      glib-compile-schemas $SNAPCRAFT_STAGE/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line
@@ -264,6 +308,9 @@ parts:
       # manually
       cp ../parts/emacs/build/native-lisp/*/comp-*.eln usr/lib/emacs/*/native-lisp/*/
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
+
+      # fix up paths in the various pkg-config files that we ship
+      find $SNAPCRAFT_STAGE -name *.pc -exec sed -i "s|prefix=$SNAPCRAFT_STAGE|prefix=/snap/emacs/current|" {} \;
   site-lisp:
     source: site-lisp
     plugin: dump
@@ -275,3 +322,4 @@ parts:
     stage:
       - emacsclient
       - setup-env
+      - emacs

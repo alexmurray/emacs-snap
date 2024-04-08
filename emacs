@@ -1,6 +1,7 @@
-#!/bin/sh
-# Launch emacsclient with the most appropriate toolkit (currently gtk (for real
-# x11) or wayland)
+#!/bin/bash
+
+# Launch emacs with the most appropriate toolkit (currently gtk (for real x11)
+# or wayland)
 
 # The environment variable EMACS_TOOLKIT can be used to specify the preferred toolkit.
 # The value should be one of: gtk or wayland
@@ -33,20 +34,5 @@ case "${EMACS_TOOLKIT}" in
     ;;
 esac
 
-EMACSCLIENT="emacsclient-${EMACS_TOOLKIT}"
+exec "$SNAP/usr/bin/emacs-${EMACS_TOOLKIT}" "$@"
 
-# add logic from the upstream emacsclient.desktop script which supports
-# spawning a new frame when launched with no arguments but only do this
-# when we are launched from the desktop file which we can detect via the
-# GIO_LAUNCHED_DESKTOP_FILE environment variable and associated
-# GIO_LAUNCHED_DESKTOP_FILE_PID
-if [ -n "$GIO_LAUNCHED_DESKTOP_FILE" ] && [ "$$" -eq "$GIO_LAUNCHED_DESKTOP_FILE_PID" ]; then
-  # the following is the logic from the upstream emacsclient.desktop file
-  if [ -n "$*" ]; then
-    exec "$SNAP/usr/bin/$EMACSCLIENT" --alternate-editor= --display="$DISPLAY" "$@"
-  else
-    exec "$SNAP/usr/bin/$EMACSCLIENT" --alternate-editor= --create-frame
-  fi
-else
-  exec "$SNAP/usr/bin/$EMACSCLIENT" "$@"
-fi
