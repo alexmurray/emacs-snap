@@ -51,8 +51,8 @@ parts:
   emacs:
     after: [tree-sitter]
     plugin: nil
-    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-29.3.tar.xz
-    source-checksum: sha256/c34c05d3ace666ed9c7f7a0faf070fea3217ff1910d004499bd5453233d742a0
+    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-29.4.tar.xz
+    source-checksum: sha256/ba897946f94c36600a7e7bb3501d27aa4112d791bfe1445c61ed28550daca235
     organize:
       snap/emacs/current/usr: usr
     build-packages:
