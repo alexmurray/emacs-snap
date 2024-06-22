@@ -45,7 +45,7 @@ parts:
   tree-sitter:
     plugin: make
     source: https://github.com/tree-sitter/tree-sitter.git
-    source-tag: v0.20.9
+    source-tag: v0.22.6
     build-environment:
       - PREFIX: "/usr"
   emacs:
