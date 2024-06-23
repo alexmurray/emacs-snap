@@ -1,6 +1,6 @@
 name: emacs
 title: GNU Emacs
-version: "29.3"
+version: "29.4"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
