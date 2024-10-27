@@ -19,8 +19,7 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
-build-base: core22
-base: bare
+base: core24
 grade: devel
 confinement: classic
 license: GPL-3.0+
@@ -80,12 +79,12 @@ parts:
       - debhelper
       - dpkg-dev
       - gawk
-      - gcc-12
-      - g++-12
+      - gcc-13
+      - g++-13
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
-      - libgccjit-12-dev
+      - libgccjit-13-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
@@ -96,7 +95,7 @@ parts:
       - liblcms2-dev
       - liblockfile-dev
       - libm17n-dev
-      - libncurses5-dev
+      - libncurses-dev
       - liboss4-salsa2
       - libotf-dev
       - libpng-dev
@@ -114,39 +113,33 @@ parts:
       - sharutils
       - texinfo
       - zlib1g-dev
-    stage-snaps:
-      - core22
     stage-packages:
       - gsettings-desktop-schemas
-      - gcc-12 # for tree-sitter
-      - g++-12 # for tree-sitter
+      - gcc-13 # for tree-sitter
+      - g++-13 # for tree-sitter
       - gvfs
       - gvfs-libs
       - ibus-gtk3
       - libacl1
       - libattr1
-      - libasound2
+      - libasound2t64
       - libaspell15
       - libasyncns0
-      - libatk-bridge2.0-0
-      - libatk1.0-0
-      - libatspi2.0-0
+      - libatk-bridge2.0-0t64
+      - libatk1.0-0t64
+      - libatspi2.0-0t64
       - libblkid1
       - libbrotli1
       - libbsd0
-      # TODO: we can't directly stage libc6 and libc6-dev into the snap as then
-      # this version of libc will be found by the loader when running binaries
-      # from the host - instead we should place these somewhere else inside the
-      # snap and set sysroot for gcc to use those to support native-comp
-      #- libc6 # required for native-comp
+      - libc6 # required for native-comp
       - libc6-dev # required for native-comp
       - libcairo-gobject2
       - libcairo2
-      - libcanberra-gtk3-0
+      - libcanberra-gtk3-0t64
       - libcanberra-gtk3-module
-      - libcanberra0
+      - libcanberra0t64
       - libdatrie1
-      - libdb5.3
+      - libdb5.3t64
       - libdrm2
       - libdevmapper1.02.1
       - libegl1
@@ -154,32 +147,31 @@ parts:
       - libepoxy0
       - libexpat1
       - libffi8
-      - libflac8
+      - libflac12t64
       - libfontconfig1
       - libfreetype6
       - libgbm1
       - libgccjit0
-      - libgccjit-12-dev
+      - libgccjit-13-dev
       - libgcc-s1
       - libgcrypt20
       - libgd3
       - libgdk-pixbuf2.0-0
       - libgif7
       - libgl1
-      - libglib2.0-0
+      - libglib2.0-0t64
       - libglvnd0
       - libglx0
       - libgmp10
-      - libgnutls30
-      - libhogweed6
+      - libgnutls30t64
+      - libhogweed6t64
       - libidn2-0
       - liblz4-1
       - libmd0
-      - libnettle8
-      - libpcre2-8-0
+      - libnettle8t64
       - libsystemd0
       - libtasn1-6
-      - libunistring2
+      - libunistring5
       - libzstd1
       - libgpg-error0
       - libgpm2
@@ -187,14 +179,14 @@ parts:
       - libgstreamer-gl1.0-0
       - libgstreamer-plugins-base1.0-0
       - libgstreamer1.0-0
-      - libgtk-3-0
+      - libgtk-3-0t64
       - libgudev-1.0-0
       - libharfbuzz-icu0
       - libharfbuzz0b
       - libhyphen0
       - libibus-1.0-5
       - libice6
-      - libicu70
+      - libicu74
       - libisl23
       - libjansson4
       - libjbig0
@@ -213,8 +205,8 @@ parts:
       - libnss-systemd
       - libogg0
       - libedit2
-      - libelf1
-      - libreadline8
+      - libelf1t64
+      - libreadline8t64
       - libncursesw6
       - libkeyutils1
       - libtinfo6
@@ -222,15 +214,15 @@ parts:
       - libdbus-1-3
       - liblzma5
       - libcap2
-      - liborc-0.4-0
+      - liborc-0.4-0t64
+      - liboss4-salsa2
       - libotf1
       - libp11-kit0
       - libpango-1.0-0
       - libpangocairo-1.0-0
       - libpangoft2-1.0-0
-      - libpcre3
       - libpixman-1-0
-      - libpng16-16
+      - libpng16-16t64
       - libpulse0
       - librsvg2-2
       - libsasl2-2
@@ -238,12 +230,12 @@ parts:
       - libselinux1
       - libsm6
       - libsndfile1
-      - libsoup2.4-1
+      - libsoup2.4-common
       - libsqlite3-0
       - libstdc++6
       - libtdb1
       - libthai0
-      - libtiff5
+      - libtiff6
       - libuuid1
       - libvorbis0a
       - libvorbisenc2
@@ -253,6 +245,7 @@ parts:
       - libwayland-egl1
       - libwayland-server0
       - libwebp7
+      - libwebpdecoder3
       - libwebpdemux2
       - libwoff1
       - libxml2
@@ -280,8 +273,8 @@ parts:
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
-      - CC: "gcc-12"
-      - CXX: "g++-12"
+      - CC: "gcc-13"
+      - CXX: "g++-13"
       - CFLAGS: "-O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
@@ -289,7 +282,7 @@ parts:
       craftctl default
       craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
     override-build: |
-      # ensure we hard-code our copy of gcc-12 and g++12 for tree-sitter
+      # ensure we hard-code our copy of gcc-13 and g++13 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch

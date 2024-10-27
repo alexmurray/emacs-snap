@@ -231,33 +231,35 @@ int main(int argc, char *argv[])
       args[nargs] = NULL;
     }
 
-  fork:
-    pid_t child = fork();
-    if (child == -1) {
-      fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
-      exit(1);
+    fork:
+    {
+      pid_t child = fork();
+      if (child == -1) {
+        fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+        exit(1);
+      }
+      if (child == 0) {
+        // we are the child - redirect our output to gtk_im_module_file and
+        // exec gtk_query_immodules with args as arguments
+        int fd = open(gtk_im_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+        if (fd < 0) {
+          fprintf(stderr, "Failed to open %s: %s\n", gtk_im_module_file, strerror(errno));
+          exit(1);
+        }
+        res = dup2(fd, 1);
+        if (res < 0) {
+          fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
+          exit(1);
+        }
+        res = execv(gtk_query_immodules, args);
+        if (res < 0) {
+          fprintf(stderr, "Failed to exec %s: %s\n", gtk_query_immodules, strerror(errno));
+          exit(1);
+        }
+      }
+      // wait for child to execute
+      waitpid(child, NULL, 0);
     }
-    if (child == 0) {
-      // we are the child - redirect our output to gtk_im_module_file and
-      // exec gtk_query_immodules with args as arguments
-      int fd = open(gtk_im_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
-      if (fd < 0) {
-        fprintf(stderr, "Failed to open %s: %s\n", gtk_im_module_file, strerror(errno));
-        exit(1);
-      }
-      res = dup2(fd, 1);
-      if (res < 0) {
-        fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
-        exit(1);
-      }
-      res = execv(gtk_query_immodules, args);
-      if (res < 0) {
-        fprintf(stderr, "Failed to exec %s: %s\n", gtk_query_immodules, strerror(errno));
-        exit(1);
-      }
-    }
-    // wait for child to execute
-    waitpid(child, NULL, 0);
   }
 
   // set PATH to include binaries from the snap since native comp needs to find
@@ -269,6 +271,35 @@ int main(int argc, char *argv[])
     asprintf(&new_path, "%s:%s/usr/bin", path, snap);
     setenv("PATH", new_path, 1);
   }
+
+  // setup sylinks so we can create a sysroot for native comp via symlinks to
+  // avoid taking disk space
+  {
+    char *target, *linkpath;
+    asprintf(&target, "%s/usr", snap);
+    asprintf(&linkpath, "%s/usr", snap_user_common);
+    unlink(linkpath);
+    res = symlink(target, linkpath);
+    if (res < 0 && errno != EEXIST) {
+      fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath, strerror(errno));
+      exit(1);
+    }
+
+    // also create lib64 if it exists
+    struct stat sb;
+    asprintf(&target, "%s/usr/lib64", snap_user_common);
+    res = stat(target, &sb);
+    if (res == 0) {
+      asprintf(&linkpath, "%s/lib64", snap_user_common);
+      unlink(linkpath);
+      res = symlink(target, linkpath);
+      if (res < 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath, strerror(errno));
+        exit(1);
+      }
+    }
+  }
+
 
   // finally break out of AppArmor confinement ignoring errors here since this
   // is best effort
