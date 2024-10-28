@@ -31,7 +31,8 @@
 ;; comp.el in when building the emacs snap but do it here too to try and
 ;; ensure this is always set no matter what
 (when (require 'comp nil t)
-  (let ((sysroot (file-name-as-directory (getenv "SNAP_USER_COMMON"))))
+  (let ((sysroot (concat (file-name-as-directory (getenv "SNAP_USER_COMMON"))
+                         "sysroot/")))
     (dolist (opt (list (concat "--sysroot=" sysroot)
                        (concat "-B" sysroot "usr/lib/gcc/")))
       (add-to-list 'native-comp-driver-options opt t))))

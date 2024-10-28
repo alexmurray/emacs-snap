@@ -275,9 +275,15 @@ int main(int argc, char *argv[])
   // setup sylinks so we can create a sysroot for native comp via symlinks to
   // avoid taking disk space
   {
-    char *target, *linkpath;
+    char *sysroot, *target, *linkpath;
+    asprintf(&sysroot, "%s/sysroot", snap_user_common);
+    res = mkdir(sysroot, S_IRUSR | S_IWUSR | S_IXUSR);
+    if (res < 0 && errno != EEXIST) {
+      fprintf(stderr, "Failed to create sysroot dir at %s: %s\n", sysroot, strerror(errno));
+      exit(1);
+    }
     asprintf(&target, "%s/usr", snap);
-    asprintf(&linkpath, "%s/usr", snap_user_common);
+    asprintf(&linkpath, "%s/usr", sysroot);
     unlink(linkpath);
     res = symlink(target, linkpath);
     if (res < 0 && errno != EEXIST) {
@@ -287,10 +293,10 @@ int main(int argc, char *argv[])
 
     // also create lib64 if it exists
     struct stat sb;
-    asprintf(&target, "%s/usr/lib64", snap_user_common);
+    asprintf(&target, "%s/usr/lib64", sysroot);
     res = stat(target, &sb);
     if (res == 0) {
-      asprintf(&linkpath, "%s/lib64", snap_user_common);
+      asprintf(&linkpath, "%s/lib64", sysroot);
       unlink(linkpath);
       res = symlink(target, linkpath);
       if (res < 0 && errno != EEXIST) {
