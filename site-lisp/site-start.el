@@ -8,16 +8,19 @@
 ;;; Code:
 
 ;; since the Emacs snap is under classic confinement, it runs in the host
-;; systems mount namespace and hence will use the host system's PATH
-;; etc. As such, we don't want subprocesses launched by Emacs to inherit
-;; the snap specific GIO_MODULE_DIR, GDK_PIXBUF and FONTCONFIG environment
-;; as they likely will be linked against different libraries than what the
-;; Emacs snap base snap is using. So make sure they are effectively unset.
+;; systems mount namespace and hence will use the host system's PATH etc. As
+;; such, we don't want subprocesses launched by Emacs to inherit the snap
+;; specific GIO_MODULE_DIR, GDK_PIXBUF and FONTCONFIG environment as they likely
+;; will be linked against different libraries than what the Emacs snap base snap
+;; is using. So make sure they are effectively unset.  Also since we are now
+;; using base core22, snapcraft helpfully sets LD_LIBRARY_PATH so unset this
+;; too.
 (dolist (env '("GIO_MODULE_DIR"
                "GDK_PIXBUF_MODULE_FILE"
                "GDK_PIXBUF_MODULEDIR"
                "FONTCONFIG_FILE"
-               "GTK_IM_MODULE_FILE"))
+               "GTK_IM_MODULE_FILE"
+               "LD_LIBRARY_PATH"))
   (setenv env))
 
 ;; keep a proxy to the SNAP env so that our patched comp.el and treesit.el can
@@ -28,7 +31,7 @@
 ;; comp.el in when building the emacs snap but do it here too to try and
 ;; ensure this is always set no matter what
 (when (require 'comp nil t)
-  (let ((sysroot (file-name-as-directory (getenv "EMACS_SNAP_DIR"))))
+  (let ((sysroot (file-name-as-directory (getenv "SNAP_USER_COMMON"))))
     (dolist (opt (list (concat "--sysroot=" sysroot)
                        (concat "-B" sysroot "usr/lib/gcc/")))
       (add-to-list 'native-comp-driver-options opt t))))
