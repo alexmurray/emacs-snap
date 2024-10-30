@@ -68,12 +68,12 @@ parts:
       - debhelper
       - dpkg-dev
       - gawk
-      - gcc-13
-      - g++-13
+      - gcc-14
+      - g++-14
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
-      - libgccjit-13-dev
+      - libgccjit-14-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
@@ -105,8 +105,8 @@ parts:
       - zlib1g-dev
     stage-packages:
       - gsettings-desktop-schemas
-      - gcc-13 # for tree-sitter
-      - g++-13 # for tree-sitter
+      - gcc-14 # for tree-sitter
+      - g++-14 # for tree-sitter
       - gvfs
       - gvfs-libs
       - ibus-gtk3
@@ -143,7 +143,7 @@ parts:
       - libfreetype6
       - libgbm1
       - libgccjit0
-      - libgccjit-13-dev
+      - libgccjit-14-dev
       - libgcc-s1
       - libgcrypt20
       - libgd3
@@ -270,14 +270,14 @@ parts:
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
-      - CC: "gcc-13"
-      - CXX: "g++-13"
+      - CC: "gcc-14"
+      - CXX: "g++-14"
       - CFLAGS: "${CFLAGS:+$CFLAGS} -O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
-      # ensure we hard-code our copy of gcc-13 and g++13 for tree-sitter
+      # ensure we hard-code our copy of gcc-14 and g++14 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
