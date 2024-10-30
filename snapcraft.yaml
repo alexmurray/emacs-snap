@@ -363,6 +363,9 @@ parts:
 
       # fix up paths in the various pkg-config files that we ship
       find $SNAPCRAFT_STAGE -name *.pc -exec sed -i "s|prefix=$SNAPCRAFT_STAGE|prefix=/snap/emacs/current|" {} \;
+
+      # finally fixup linker script to use our libc_nonshared.a
+      sed -i "s| /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a| /snap/emacs/current/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a|" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
   site-lisp:
     source: site-lisp
     plugin: dump
