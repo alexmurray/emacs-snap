@@ -276,7 +276,7 @@ parts:
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
-      snapcraftctl pull
+      craftctl default
       # ensure we hard-code our copy of gcc-13 and g++13 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
@@ -336,7 +336,7 @@ parts:
       done
     override-stage: |
       set -eu
-      snapcraftctl stage
+      craftctl default
       glib-compile-schemas $SNAPCRAFT_STAGE/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
@@ -349,16 +349,16 @@ parts:
       # the AOT compile as well - so set them afterwards just inside the
       # snap
       VERSION=$(ls -1 usr/share/emacs/*/lisp/emacs-lisp/comp.el* | head -n1 | cut -d / -f 4)
-      rm -f usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.elc
-      [ -f usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el.gz ] && gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
+      rm -f "usr/share/emacs/${VERSION}/lisp/emacs-lisp/comp.elc"
+      [ -f "usr/share/emacs/${VERSION}/lisp/emacs-lisp/comp.el.gz" ] && gunzip -f usr/share/emacs/*/lisp/emacs-lisp/comp.el.gz
       # check if patched first so we can run prime stage multiple times when
       # iterating on changes
-      grep -q SNAP usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el || sed s/@@VERSION@@/$VERSION/g $SNAPCRAFT_PROJECT_DIR/native-comp.patch | patch -p1
-      ../parts/emacs/build/src/emacs -batch -f batch-byte+native-compile usr/share/emacs/$VERSION/lisp/emacs-lisp/comp.el
+      grep -q SNAP "usr/share/emacs/${VERSION}/lisp/emacs-lisp/comp.el" || sed "s/@@VERSION@@/${VERSION}/g" $SNAPCRAFT_PROJECT_DIR/native-comp.patch | sed "s/@@MULTIARCH@@/$CRAFT_ARCH_TRIPLET_BUILD_FOR/g" | patch -p1
+      ../parts/emacs/build/src/emacs -batch -f batch-byte+native-compile "usr/share/emacs/${VERSION}/lisp/emacs-lisp/comp.el"
       # compiled eln files get put back in the build directory - copy them over
       # manually
       VERSION_HASH=$(basename ../parts/emacs/build/native-lisp/*)
-      cp ../parts/emacs/build/native-lisp/$VERSION_HASH/comp-*.eln usr/lib/emacs/$VERSION/native-lisp/$VERSION_HASH/
+      cp "../parts/emacs/build/native-lisp/${VERSION_HASH}"/comp-*.eln "usr/lib/emacs/${VERSION}/native-lisp/${VERSION_HASH}/"
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
 
       # fix up paths in the various pkg-config files that we ship
