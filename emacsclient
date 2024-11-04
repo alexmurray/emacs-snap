@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Launch emacsclient with the most appropriate toolkit (currently gtk (for real
 # x11) or wayland)
 

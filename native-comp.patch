@@ -8,7 +8,7 @@ index e97832455b9..b04cfa00c33 100644
    (cond ((eq system-type 'darwin) '("-Wl,-w"))
 -        ((eq system-type 'cygwin) '("-Wl,-dynamicbase")))
 +        ((eq system-type 'cygwin) '("-Wl,-dynamicbase"))
-+        ((getenv "SNAP") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP"))) (concat "-B" (file-name-as-directory (getenv "SNAP")) "usr/lib/gcc/"))))
++        ((getenv "SNAP_USER_COMMON") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP_USER_COMMON")) "sysroot/") (concat "-B" (file-name-as-directory (getenv "SNAP_USER_COMMON")) "sysroot/usr/lib/gcc/"))))
    "Options passed verbatim to the native compiler's back-end driver.
  Note that not all options are meaningful; typically only the options
  affecting the assembler and linker are likely to be useful.
