@@ -20,7 +20,7 @@ description: |
   ensure source and build transparency.
 
 base: core24
-grade: devel
+grade: stable
 confinement: classic
 license: GPL-3.0+
 compression: lzo
