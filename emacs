@@ -10,6 +10,11 @@
 # toolkit to use by checking if the XDG_SESSION_TYPE environment variable is
 # set to wayland or x11.
 
+# FIXME - remove the following once the various issues like
+# https://github.com/alexmurray/emacs-snap/issues/78 and
+# https://github.com/alexmurray/emacs-snap/issues/79 are resolved
+: "${EMACS_TOOLKIT:=gtk}"
+
 if [ -n "${XDG_SESSION_TYPE}" ]; then
   if [ "${XDG_SESSION_TYPE}" = "wayland" ]; then
     : "${EMACS_TOOLKIT:=wayland}"
@@ -24,7 +29,7 @@ case "${EMACS_TOOLKIT}" in
   gtk|wayland)
     ;;
   *)
-    echo "Invalid value for EMACS_TOOLKIT: ${EMACS_TOOLKIT}"
+    echo "Invalid value for EMACS_TOOLKIT: ${EMACS_TOOLKIT} - must be either gtk or wayland"
     exit 1
     ;;
 esac
