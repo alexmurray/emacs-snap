@@ -47,7 +47,7 @@ parts:
     build-attributes:
       - enable-patchelf
     source: https://github.com/tree-sitter/tree-sitter.git
-    source-tag: v0.22.6
+    source-tag: v0.24.4
     build-environment:
       - PREFIX: "/usr"
   emacs:
