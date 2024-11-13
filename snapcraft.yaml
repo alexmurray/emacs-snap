@@ -20,7 +20,7 @@ description: |
   ensure source and build transparency.
 
 base: core24
-grade: devel
+grade: stable
 confinement: classic
 license: GPL-3.0+
 compression: lzo
@@ -47,7 +47,7 @@ parts:
     build-attributes:
       - enable-patchelf
     source: https://github.com/tree-sitter/tree-sitter.git
-    source-tag: v0.22.6
+    source-tag: v0.24.4
     build-environment:
       - PREFIX: "/usr"
   emacs:
