@@ -304,8 +304,8 @@ parts:
       cp src/emacs.pdmp src/emacs-wayland.pdmp
 
       # then build without pgtk as well
+      make maintainer-clean
       env NOCONFIGURE=1 ./autogen.sh
-      make distclean
       ./configure \
         --prefix=/snap/emacs/current/usr \
         --with-x-toolkit=gtk3 \
