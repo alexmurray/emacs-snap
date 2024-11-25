@@ -277,7 +277,6 @@ parts:
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
-      craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
       # ensure we hard-code our copy of gcc-14 and g++14 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
