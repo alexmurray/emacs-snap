@@ -1,6 +1,6 @@
 name: emacs
 title: GNU Emacs
-version: "29.4"
+version: "30.0.92"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -55,8 +55,8 @@ parts:
     plugin: nil
     build-attributes:
       - enable-patchelf
-    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-29.4.tar.xz
-    source-checksum: sha256/ba897946f94c36600a7e7bb3501d27aa4112d791bfe1445c61ed28550daca235
+    source: https://alpha.gnu.org/gnu/emacs/pretest/emacs-30.0.92.tar.xz
+    source-checksum: sha256/d89287bd5a8381bb60e14aab95202377261d43a60d15dc0a61d0d662bc5626be
     organize:
       snap/emacs/current/usr: usr
     build-packages:
