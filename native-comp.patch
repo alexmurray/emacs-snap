@@ -2,13 +2,13 @@ diff --git a/usr/share/emacs/@@VERSION@@/lisp/emacs-lisp/comp.el b/usr/share/ema
 index e97832455b9..b04cfa00c33 100644
 --- a/usr/share/emacs/@@VERSION@@/lisp/emacs-lisp/comp.el
 +++ b/usr/share/emacs/@@VERSION@@/lisp/emacs-lisp/comp.el
-@@ -186,8 +186,7 @@ and above."
-   :type '(repeat string)
-   :version "28.1")
+@@ -188,7 +188,8 @@ and above."
  
--(defcustom native-comp-driver-options (when (eq system-type 'darwin)
--                                        '("-Wl,-w"))
-+(defcustom native-comp-driver-options (when (getenv "SNAP_USER_COMMON") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP_USER_COMMON")) "sysroot/") (concat "-B" (file-name-as-directory (getenv "SNAP_USER_COMMON")) "sysroot/usr/lib/gcc/")))
+ (defcustom native-comp-driver-options
+   (cond ((eq system-type 'darwin) '("-Wl,-w"))
+-        ((eq system-type 'cygwin) '("-Wl,-dynamicbase")))
++        ((eq system-type 'cygwin) '("-Wl,-dynamicbase"))
++        ((getenv "SNAP_USER_COMMON") (list (concat "--sysroot=" (file-name-as-directory (getenv "SNAP_USER_COMMON")) "sysroot/") (concat "-B" (file-name-as-directory (getenv "SNAP_USER_COMMON")) "sysroot/usr/lib/gcc/"))))
    "Options passed verbatim to the native compiler's back-end driver.
  Note that not all options are meaningful; typically only the options
  affecting the assembler and linker are likely to be useful.

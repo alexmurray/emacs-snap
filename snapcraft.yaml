@@ -277,6 +277,7 @@ parts:
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
+      craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
       # ensure we hard-code our copy of gcc-14 and g++14 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
@@ -298,16 +299,15 @@ parts:
         --with-native-compilation=aot \
         --with-pgtk \
         --with-xinput2 \
-        --with-tree-sitter \
-        --with-json
+        --with-tree-sitter
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
       cp src/emacs src/emacs-wayland
       cp lib-src/emacsclient lib-src/emacsclient-wayland
       cp src/emacs.pdmp src/emacs-wayland.pdmp
 
       # then build without pgtk as well
+      make maintainer-clean
       env NOCONFIGURE=1 ./autogen.sh
-      make distclean
       ./configure \
         --prefix=/snap/emacs/current/usr \
         --with-x-toolkit=gtk3 \
@@ -317,8 +317,7 @@ parts:
         --with-native-compilation=aot \
         --without-pgtk \
         --with-xinput2 \
-        --with-tree-sitter \
-        --with-json
+        --with-tree-sitter
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
       cp src/emacs src/emacs-gtk
       cp lib-src/emacsclient lib-src/emacsclient-gtk
