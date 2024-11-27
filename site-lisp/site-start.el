@@ -27,11 +27,13 @@
 ;; use it - use /snap/emacs/current if $SNAP is not set for some reason
 (setenv "EMACS_SNAP_DIR" (or (getenv "SNAP") "/snap/emacs/current"))
 
+(setenv "EMACS_SNAP_USER_COMMON" (or (getenv "SNAP_USER_COMMON") (expand-file-name "~/snap/emacs/common")))
+
 ;; ensure the correct native-comp-driver-options are set -- we also patch
 ;; comp.el in when building the emacs snap but do it here too to try and
 ;; ensure this is always set no matter what
 (when (require 'comp nil t)
-  (let ((sysroot (concat (file-name-as-directory (getenv "SNAP_USER_COMMON"))
+  (let ((sysroot (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON"))
                          "sysroot/")))
     (dolist (opt (list (concat "--sysroot=" sysroot)
                        (concat "-B" sysroot "usr/lib/gcc/")))

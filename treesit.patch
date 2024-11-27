@@ -22,21 +22,21 @@ index a9761dbb38d..274b3979bd7 100644
            (treesit--call-process-signal
 -           cc nil t nil "-fPIC" "-c" "-I." "parser.c")
 +           cc nil t nil "-fPIC" "-c" "-I."
-+           "--sysroot" (file-name-as-directory (getenv "EMACS_SNAP_DIR"))
++           "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
 +           "parser.c")
            ;; cc -fPIC -c -I. scanner.c
            (when (file-exists-p "scanner.c")
              (treesit--call-process-signal
 -             cc nil t nil "-fPIC" "-c" "-I." "scanner.c"))
 +             cc nil t nil "-fPIC" "-c" "-I."
-+             "--sysroot" (file-name-as-directory (getenv "EMACS_SNAP_DIR"))
++             "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
 +             "scanner.c"))
            ;; c++ -fPIC -I. -c scanner.cc
            (when (file-exists-p "scanner.cc")
              (treesit--call-process-signal
 -             c++ nil t nil "-fPIC" "-c" "-I." "scanner.cc"))
 +             c++ nil t nil "-fPIC" "-c" "-I."
-+             "--sysroot" (file-name-as-directory (getenv "EMACS_SNAP_DIR"))
++             "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
 +             "scanner.cc"))
            ;; cc/c++ -fPIC -shared *.o -o "libtree-sitter-${lang}.${soext}"
            (apply #'treesit--call-process-signal
@@ -45,7 +45,7 @@ index a9761dbb38d..274b3979bd7 100644
                            (rx bos (+ anychar) ".o" eos))
                         "-o" ,lib-name)
                     `("-fPIC" "-shared"
-+                     "--sysroot" ,(file-name-as-directory (getenv "EMACS_SNAP_DIR"))
++                     "--sysroot" ,(concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
                       ,@(directory-files
                          default-directory nil
                          (rx bos (+ anychar) ".o" eos))
