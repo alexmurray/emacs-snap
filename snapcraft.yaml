@@ -1,6 +1,6 @@
 name: emacs
 title: GNU Emacs
-version: "30.0.92"
+adopt-info: emacs
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -55,8 +55,8 @@ parts:
     plugin: nil
     build-attributes:
       - enable-patchelf
-    source: https://alpha.gnu.org/gnu/emacs/pretest/emacs-30.0.92.tar.xz
-    source-checksum: sha256/d89287bd5a8381bb60e14aab95202377261d43a60d15dc0a61d0d662bc5626be
+    source: git://git.savannah.gnu.org/emacs.git
+    source-depth: 1
     organize:
       snap/emacs/current/usr: usr
     build-packages:
@@ -277,6 +277,7 @@ parts:
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
+      craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
       # ensure we hard-code our copy of gcc-14 and g++14 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
