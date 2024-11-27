@@ -53,6 +53,8 @@ parts:
   emacs:
     after: [tree-sitter]
     plugin: nil
+    build-attributes:
+      - enable-patchelf
     source: git://git.savannah.gnu.org/emacs.git
     source-depth: 1
     organize:
@@ -353,8 +355,9 @@ parts:
       grep -q SNAP "usr/share/emacs/${VERSION}/lisp/emacs-lisp/comp.el" || sed "s/@@VERSION@@/${VERSION}/g" $SNAPCRAFT_PROJECT_DIR/native-comp.patch | sed "s/@@MULTIARCH@@/$CRAFT_ARCH_TRIPLET_BUILD_FOR/g" | patch -p1
       ../parts/emacs/build/src/emacs -batch -f batch-byte+native-compile "usr/share/emacs/${VERSION}/lisp/emacs-lisp/comp.el"
       # compiled eln files get put back in the build directory - copy them over
-      # manually
-      VERSION_HASH=$(basename ../parts/emacs/build/native-lisp/*)
+      # manually - there may be more than one directory here but only one will
+      # contain the comp related eln files
+      VERSION_HASH=$(basename $(dirname ../parts/emacs/build/native-lisp/*/comp-common*.eln))
       cp "../parts/emacs/build/native-lisp/${VERSION_HASH}"/comp-*.eln "usr/lib/emacs/${VERSION}/native-lisp/${VERSION_HASH}/"
       gzip usr/share/emacs/*/lisp/emacs-lisp/comp.el
 
