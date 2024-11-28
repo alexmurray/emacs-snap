@@ -55,7 +55,7 @@ parts:
     plugin: nil
     build-attributes:
       - enable-patchelf
-    source: git://git.savannah.gnu.org/emacs.git
+    source: https://github.com/emacs-mirror/emacs.git
     source-depth: 1
     organize:
       snap/emacs/current/usr: usr
