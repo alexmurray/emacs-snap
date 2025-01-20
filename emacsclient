@@ -9,11 +9,6 @@
 # toolkit to use by checking if the XDG_SESSION_TYPE environment variable is
 # set to wayland or x11.
 
-# FIXME - remove the following once the various issues like
-# https://github.com/alexmurray/emacs-snap/issues/78 and
-# https://github.com/alexmurray/emacs-snap/issues/79 are resolved
-: "${EMACS_TOOLKIT:=gtk}"
-
 if [ -n "${XDG_SESSION_TYPE}" ]; then
   if [ "${XDG_SESSION_TYPE}" = "wayland" ]; then
     : "${EMACS_TOOLKIT:=wayland}"
@@ -41,9 +36,15 @@ EMACSCLIENT="emacsclient-${EMACS_TOOLKIT}"
 # GIO_LAUNCHED_DESKTOP_FILE environment variable and associated
 # GIO_LAUNCHED_DESKTOP_FILE_PID
 if [ -n "$GIO_LAUNCHED_DESKTOP_FILE" ] && [ "$$" -eq "$GIO_LAUNCHED_DESKTOP_FILE_PID" ]; then
-  # the following is the logic from the upstream emacsclient.desktop file
+  # the following is the logic from the upstream emacsclient.desktop file other
+  # than the wayland display handling if statement
   if [ -n "$*" ]; then
-    exec "$SNAP/usr/bin/$EMACSCLIENT" --alternate-editor= --display="$DISPLAY" "$@"
+    # only set --display if EMACS_TOOLKIT is not wayland -
+    # https://github.com/alexmurray/emacs-snap/issues/98
+    if [ "${EMACS_TOOLKIT}" != "wayland" ]; then
+      set -- --display="$DISPLAY" "$@"
+    fi
+    exec "$SNAP/usr/bin/$EMACSCLIENT" --alternate-editor= "$@"
   else
     exec "$SNAP/usr/bin/$EMACSCLIENT" --alternate-editor= --create-frame
   fi
