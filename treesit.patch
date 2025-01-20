@@ -1,10 +1,20 @@
+From 899138fd8e2ea6e7bc9b7845a2fcc9ce3500f1d7 Mon Sep 17 00:00:00 2001
+From: Alex Murray <alex.murray@canonical.com>
+Date: Mon, 20 Jan 2025 13:38:55 +1030
+Subject: [PATCH] lisp/treesit.el: use snap provided gcc when compiling modules
+
+Signed-off-by: Alex Murray <alex.murray@canonical.com>
+---
+ lisp/treesit.el | 24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
+
 diff --git a/lisp/treesit.el b/lisp/treesit.el
-index 2518204ce93..7e6aef76bd1 100644
+index 8d86d142e3f..dd1555088dc 100644
 --- a/lisp/treesit.el
 +++ b/lisp/treesit.el
-@@ -3790,17 +3790,19 @@ function signals an error."
-                       maybe-repo-dir
-                     (expand-file-name "repo")))
+@@ -4437,17 +4437,20 @@ For LANG, SOURCE-DIR, CC, C++, see `treesit-language-source-alist'.
+ If anything goes wrong, this function signals an `treesit-error'."
+   (let* ((lang (symbol-name lang))
           (source-dir (expand-file-name (or source-dir "src") workdir))
 -         (cc (or cc (seq-find #'executable-find '("cc" "gcc" "c99"))
 +         (cc (or cc (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin/gcc-14")
@@ -18,47 +28,50 @@ index 2518204ce93..7e6aef76bd1 100644
                      (signal 'treesit-error '("Emacs cannot figure out the file extension for dynamic libraries for this system, because `dynamic-library-suffixes' is nil"))))
           (out-dir (or (and out-dir (expand-file-name out-dir))
                        (locate-user-emacs-file "tree-sitter")))
--         (lib-name (concat "libtree-sitter-" lang soext)))
-+         (lib-name (concat "libtree-sitter-" lang soext))
-+         (process-environment (copy-sequence process-environment)))
++         ;; so we can set COMPILER_PATH below in the environment for gcc etc
++         (process-environment (copy-sequence process-environment))
+          (lib-name (concat "libtree-sitter-" lang soext)))
 +    (setenv "COMPILER_PATH" (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin"))
-     (unwind-protect
-         (with-temp-buffer
-           (if url-is-dir
-@@ -3814,15 +3816,24 @@ function signals an error."
-           (message "Compiling library")
-           ;; cc -fPIC -c -I. parser.c
-           (treesit--call-process-signal
--           cc nil t nil "-fPIC" "-c" "-I." "parser.c")
-+           cc nil t nil "-fPIC" "-c" "-I."
-+           "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
-+           "-B" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
-+           "parser.c")
-           ;; cc -fPIC -c -I. scanner.c
-           (when (file-exists-p "scanner.c")
-             (treesit--call-process-signal
--             cc nil t nil "-fPIC" "-c" "-I." "scanner.c"))
-+             cc nil t nil "-fPIC" "-c" "-I."
-+             "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
-+             "-B" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
-+             "scanner.c"))
-           ;; c++ -fPIC -I. -c scanner.cc
-           (when (file-exists-p "scanner.cc")
-             (treesit--call-process-signal
--             c++ nil t nil "-fPIC" "-c" "-I." "scanner.cc"))
-+             c++ nil t nil "-fPIC" "-c" "-I."
-+             "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
-+             "-B" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
-+             "scanner.cc"))
-           ;; cc/c++ -fPIC -shared *.o -o "libtree-sitter-${lang}.${soext}"
-           (apply #'treesit--call-process-signal
-                  (if (file-exists-p "scanner.cc") c++ cc)
-@@ -3834,6 +3845,8 @@ function signals an error."
-                           (rx bos (+ anychar) ".o" eos))
-                        "-o" ,lib-name)
-                    `("-fPIC" "-shared"
-+                     "--sysroot" ,(concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
-+                     "-B" ,(concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
-                      ,@(directory-files
-                         default-directory nil
-                         (rx bos (+ anychar) ".o" eos))
+     (with-temp-buffer
+       ;; We need to go into the source directory because some
+       ;; header files use relative path (#include "../xxx").
+@@ -4456,15 +4459,24 @@ If anything goes wrong, this function signals an `treesit-error'."
+       (message "Compiling library")
+       ;; cc -fPIC -c -I. parser.c
+       (treesit--call-process-signal
+-       cc nil t nil "-fPIC" "-c" "-I." "parser.c")
++       cc nil t nil "-fPIC" "-c" "-I."
++       "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
++       "-B" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
++       "parser.c")
+       ;; cc -fPIC -c -I. scanner.c
+       (when (file-exists-p "scanner.c")
+         (treesit--call-process-signal
+-         cc nil t nil "-fPIC" "-c" "-I." "scanner.c"))
++         cc nil t nil "-fPIC" "-c" "-I."
++         "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
++         "-B" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
++         "scanner.c"))
+       ;; c++ -fPIC -I. -c scanner.cc
+       (when (file-exists-p "scanner.cc")
+         (treesit--call-process-signal
+-         c++ nil t nil "-fPIC" "-c" "-I." "scanner.cc"))
++         c++ nil t nil "-fPIC" "-c" "-I."
++         "--sysroot" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
++         "-B" (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
++         "scanner.cc"))
+       ;; cc/c++ -fPIC -shared *.o -o "libtree-sitter-${lang}.${soext}"
+       (apply #'treesit--call-process-signal
+              (if (file-exists-p "scanner.cc") c++ cc)
+@@ -4476,6 +4488,8 @@ If anything goes wrong, this function signals an `treesit-error'."
+                       (rx bos (+ anychar) ".o" eos))
+                    "-o" ,lib-name)
+                `("-fPIC" "-shared"
++                 "--sysroot" ,(concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/")
++                 "-B" ,(concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON")) "sysroot/usr/lib/gcc")
+                  ,@(directory-files
+                     default-directory nil
+                     (rx bos (+ anychar) ".o" eos))
+-- 
+2.45.2
+
