@@ -79,7 +79,6 @@ parts:
       - libgpm-dev
       - libgtk-3-dev
       - libharfbuzz-dev
-      - libjansson-dev
       - libjpeg-dev
       - liblcms2-dev
       - liblockfile-dev
@@ -180,7 +179,6 @@ parts:
       - libice6
       - libicu74
       - libisl23
-      - libjansson4
       - libjbig0
       - libjpeg-turbo8
       - libcom-err2
