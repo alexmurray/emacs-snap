@@ -1,0 +1,24 @@
+summary: Test various emacs functionality
+environment:
+  CHANNEL/stable: stable
+  CHANNEL/candidate: candidate
+  CHANNEL/beta: beta
+  CHANNEL/edge: edge
+
+prepare: |
+  snap install emacs --classic --channel latest/$CHANNEL
+  echo '(defun foo () (message "foo"))' >> test.el
+
+restore: |
+  rm -f test.el
+  snap remove emacs
+  rm -rf snap/emacs
+  rm -rf .emacs.d
+
+execute: |
+  # test native compilation
+  emacs --batch --eval '(native-compile "test.el")'
+
+  # test treesit compilation
+  emacs --batch --eval "(progn (require 'treesit) (add-to-list 'treesit-language-source-alist '(c . (\"https://github.com/tree-sitter/tree-sitter-c\"))) (treesit-install-language-grammar 'c))"
+  test -f ~/.emacs.d/tree-sitter/libtree-sitter-c.so
