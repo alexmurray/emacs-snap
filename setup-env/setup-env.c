@@ -23,8 +23,7 @@
 // NOTE: in general we don't bother to free any of the dynamically allocated
 // memory since this is not a long-lived process so we don't care about memory
 // leaks as it will all get cleaned up when the process exits
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int res;
   struct stat st;
   const char *snap;
@@ -73,16 +72,19 @@ int main(int argc, char *argv[])
   asprintf(&gdk_cache_dir, "%s/.cache", snap_user_common);
   mkdir(gdk_cache_dir, 0700);
 
-  asprintf(&gio_module_dir, "%s/usr/lib/%s/gio/modules", snap,  arch);
+  asprintf(&gio_module_dir, "%s/usr/lib/%s/gio/modules", snap, arch);
   setenv("GIO_MODULE_DIR", gio_module_dir, 1);
 
-  asprintf(&gdk_pixbuf_module_file, "%s/gdk-pixbuf-loaders.cache", gdk_cache_dir);
+  asprintf(&gdk_pixbuf_module_file, "%s/gdk-pixbuf-loaders.cache",
+           gdk_cache_dir);
   setenv("GDK_PIXBUF_MODULE_FILE", gdk_pixbuf_module_file, 1);
 
-  asprintf(&gdk_pixbuf_moduledir, "%s/usr/lib/%s/gdk-pixbuf-2.0/2.10.0/loaders", snap, arch);
+  asprintf(&gdk_pixbuf_moduledir, "%s/usr/lib/%s/gdk-pixbuf-2.0/2.10.0/loaders",
+           snap, arch);
   setenv("GDK_PIXBUF_MODULEDIR", gdk_pixbuf_moduledir, 1);
 
-  asprintf(&gdk_pixbuf_query_loaders, "%s/usr/lib/%s/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders", snap, arch);
+  asprintf(&gdk_pixbuf_query_loaders,
+           "%s/usr/lib/%s/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders", snap, arch);
   res = stat(gdk_pixbuf_query_loaders, &st);
   if (res == 0) {
     // execute gdk_pixbuf_query_loaders and redirect output to
@@ -97,7 +99,8 @@ int main(int argc, char *argv[])
       // exec gdk_pixbuf_query_loaders
       int fd = open(gdk_pixbuf_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
       if (fd < 0) {
-        fprintf(stderr, "Failed to open %s: %s\n", gdk_pixbuf_module_file, strerror(errno));
+        fprintf(stderr, "Failed to open %s: %s\n", gdk_pixbuf_module_file,
+                strerror(errno));
         exit(1);
       }
       res = dup2(fd, 1);
@@ -107,7 +110,8 @@ int main(int argc, char *argv[])
       }
       res = execl(gdk_pixbuf_query_loaders, gdk_pixbuf_query_loaders, NULL);
       if (res < 0) {
-        fprintf(stderr, "Failed to exec %s: %s\n", gdk_pixbuf_query_loaders, strerror(errno));
+        fprintf(stderr, "Failed to exec %s: %s\n", gdk_pixbuf_query_loaders,
+                strerror(errno));
         exit(1);
       }
     }
@@ -140,15 +144,19 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Failed to compile regex\n");
       exit(1);
     }
-    asprintf(&cachedir_entry, "	<cachedir>%s</cachedir>\n", fontconfig_cache_dir);
+    asprintf(&cachedir_entry, "	<cachedir>%s</cachedir>\n",
+             fontconfig_cache_dir);
     asprintf(&source_path, "%s/etc/fonts/fonts.conf", snap);
     infd = open(source_path, O_RDONLY);
     if (infd == -1) {
-      fprintf(stderr, "Failed to open source fontconfig file %s: %s\n", source_path, strerror(errno));
+      fprintf(stderr, "Failed to open source fontconfig file %s: %s\n",
+              source_path, strerror(errno));
     }
-    outfd = open(fontconfig_file, O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC, 0644);
+    outfd =
+      open(fontconfig_file, O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC, 0644);
     if (outfd == -1) {
-      fprintf(stderr, "Failed to open dest fontconfig file %s: %s\n", fontconfig_file, strerror(errno));
+      fprintf(stderr, "Failed to open dest fontconfig file %s: %s\n",
+              fontconfig_file, strerror(errno));
     }
     res = fstat(infd, &st);
     if (res == -1) {
@@ -156,7 +164,8 @@ int main(int argc, char *argv[])
     }
     infile = fdopen(infd, "r");
     if (infile == NULL) {
-      fprintf(stderr, "Failed to open %s for streaming: %s\n", source_path, strerror(errno));
+      fprintf(stderr, "Failed to open %s for streaming: %s\n", source_path,
+              strerror(errno));
     }
     // read infd line by line and write the output to outfd - check along the
     // way for cachedir entries and replace these with our own
@@ -183,7 +192,8 @@ int main(int argc, char *argv[])
   mkdir(gtk_im_module_dir, 0700);
 
   asprintf(&gtk_im_module_file, "%s/immodules.cache", gtk_im_module_dir);
-  asprintf(&gtk_query_immodules, "%s/usr/lib/%s/libgtk-3-0/gtk-query-immodules-3.0", snap, arch);
+  asprintf(&gtk_query_immodules,
+           "%s/usr/lib/%s/libgtk-3-0/gtk-query-immodules-3.0", snap, arch);
   res = stat(gtk_query_immodules, &st);
   if (res == 0) {
     // execute gtk_query_immodules over the list of immodules and redirect
@@ -198,13 +208,15 @@ int main(int argc, char *argv[])
     // first argument should be program name as argv[0]
     args = realloc(args, (nargs + 1) * sizeof(char *));
     if (args == NULL) {
-      fprintf(stderr, "Failed to allocate argument list: %s\n", strerror(errno));
+      fprintf(stderr, "Failed to allocate argument list: %s\n",
+              strerror(errno));
       exit(1);
     }
     args[0] = strdup(gtk_query_immodules);
     nargs++;
 
-    asprintf(&gtk_immodules_path, "%s/usr/lib/%s/gtk-3.0/3.0.0/immodules", snap, arch);
+    asprintf(&gtk_immodules_path, "%s/usr/lib/%s/gtk-3.0/3.0.0/immodules", snap,
+             arch);
     dir = opendir(gtk_immodules_path);
     while (dir != NULL && (entry = readdir(dir)) != NULL) {
       // if starts with im- and ends with .so then append this to the list of
@@ -238,35 +250,36 @@ int main(int argc, char *argv[])
       args[nargs] = NULL;
     }
 
-    fork:
-    {
-      pid_t child = fork();
-      if (child == -1) {
-        fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+  fork: {
+    pid_t child = fork();
+    if (child == -1) {
+      fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+      exit(1);
+    }
+    if (child == 0) {
+      // we are the child - redirect our output to gtk_im_module_file and
+      // exec gtk_query_immodules with args as arguments
+      int fd = open(gtk_im_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+      if (fd < 0) {
+        fprintf(stderr, "Failed to open %s: %s\n", gtk_im_module_file,
+                strerror(errno));
         exit(1);
       }
-      if (child == 0) {
-        // we are the child - redirect our output to gtk_im_module_file and
-        // exec gtk_query_immodules with args as arguments
-        int fd = open(gtk_im_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
-        if (fd < 0) {
-          fprintf(stderr, "Failed to open %s: %s\n", gtk_im_module_file, strerror(errno));
-          exit(1);
-        }
-        res = dup2(fd, 1);
-        if (res < 0) {
-          fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
-          exit(1);
-        }
-        res = execv(gtk_query_immodules, args);
-        if (res < 0) {
-          fprintf(stderr, "Failed to exec %s: %s\n", gtk_query_immodules, strerror(errno));
-          exit(1);
-        }
+      res = dup2(fd, 1);
+      if (res < 0) {
+        fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
+        exit(1);
       }
-      // wait for child to execute
-      waitpid(child, NULL, 0);
+      res = execv(gtk_query_immodules, args);
+      if (res < 0) {
+        fprintf(stderr, "Failed to exec %s: %s\n", gtk_query_immodules,
+                strerror(errno));
+        exit(1);
+      }
     }
+    // wait for child to execute
+    waitpid(child, NULL, 0);
+  }
 
     setenv("GTK_IM_MODULE_FILE", gtk_im_module_file, 1);
   }
@@ -274,8 +287,7 @@ int main(int argc, char *argv[])
   // set PATH to include binaries from the snap since native comp needs to find
   // as and other similar binaries
   path = getenv("PATH");
-  if (path != NULL)
-  {
+  if (path != NULL) {
     char *new_path;
     asprintf(&new_path, "%s:%s/usr/bin", path, snap);
     setenv("PATH", new_path, 1);
@@ -288,7 +300,8 @@ int main(int argc, char *argv[])
     asprintf(&sysroot, "%s/sysroot", snap_user_common);
     res = mkdir(sysroot, S_IRUSR | S_IWUSR | S_IXUSR);
     if (res < 0 && errno != EEXIST) {
-      fprintf(stderr, "Failed to create sysroot dir at %s: %s\n", sysroot, strerror(errno));
+      fprintf(stderr, "Failed to create sysroot dir at %s: %s\n", sysroot,
+              strerror(errno));
       exit(1);
     }
     asprintf(&target, "%s/usr", snap);
@@ -296,7 +309,8 @@ int main(int argc, char *argv[])
     unlink(linkpath);
     res = symlink(target, linkpath);
     if (res < 0 && errno != EEXIST) {
-      fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath, strerror(errno));
+      fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath,
+              strerror(errno));
       exit(1);
     }
 
@@ -309,7 +323,8 @@ int main(int argc, char *argv[])
       unlink(linkpath);
       res = symlink(target, linkpath);
       if (res < 0 && errno != EEXIST) {
-        fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath, strerror(errno));
+        fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath,
+                strerror(errno));
         exit(1);
       }
     }
@@ -325,7 +340,8 @@ int main(int argc, char *argv[])
     if (access(gschemas_compiled, F_OK) == 0) {
       setenv("GSETTINGS_SCHEMAS_DIR", gsettings_schemas_dir, 1);
     } else {
-      fprintf(stderr, "No gschemas.compiled found in %s\n", gsettings_schemas_dir);
+      fprintf(stderr, "No gschemas.compiled found in %s\n",
+              gsettings_schemas_dir);
     }
   }
 
@@ -342,7 +358,8 @@ int main(int argc, char *argv[])
       asprintf(&gvfsd_dir, "%s/gvfsd", xdg_runtime_dir);
       res = mkdir(gvfsd_dir, S_IRUSR | S_IWUSR | S_IXUSR);
       if (res < 0 && errno != EEXIST) {
-        fprintf(stderr, "Failed to create gvfsd dir at %s: %s\n", gvfsd_dir, strerror(errno));
+        fprintf(stderr, "Failed to create gvfsd dir at %s: %s\n", gvfsd_dir,
+                strerror(errno));
       }
     }
   }
@@ -361,8 +378,8 @@ int main(int argc, char *argv[])
     // unconfined
     if (strncmp(label, "snap.emacs.", strlen("snap.emacs.")) == 0 &&
         strlen(label) > strlen("(complain)") &&
-        strncmp(label + strlen(label) - strlen("(complain)"),
-                "(complain)", strlen("(complain)")) == 0) {
+        strncmp(label + strlen(label) - strlen("(complain)"), "(complain)",
+                strlen("(complain)")) == 0) {
       // ignore errors here too
       fd = open("/proc/self/attr/current", O_WRONLY | O_APPEND);
       write(fd, "changeprofile unconfined", strlen("changeprofile unconfined"));
@@ -375,7 +392,6 @@ int main(int argc, char *argv[])
     execv(argv[1], &argv[1]);
   }
 
- exit:
+exit:
   exit(0);
 }
-
