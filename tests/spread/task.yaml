@@ -1,12 +1,12 @@
 summary: Test various emacs functionality
 environment:
-  CHANNEL/stable: stable
-  CHANNEL/candidate: candidate
-  CHANNEL/beta: beta
-  CHANNEL/edge: edge
+  CHANNEL/latest_stable: latest/stable
+  CHANNEL/latest_candidate: latest/candidate
+  CHANNEL/latest_beta: latest/beta
+  CHANNEL/latest_edge: latest/edge
 
 prepare: |
-  snap install emacs --classic --channel latest/$CHANNEL
+  snap install emacs --classic --channel $CHANNEL
   echo '(defun foo () (message "foo"))' >> test.el
 
 restore: |
