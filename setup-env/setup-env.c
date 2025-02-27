@@ -315,7 +315,8 @@ int main(int argc, char *argv[])
     }
   }
 
-  // set GSETTINGS_SCHEMAS_DIR for https://github.com/alexmurray/emacs-snap/issues/103 etc
+  // set GSETTINGS_SCHEMAS_DIR for
+  // https://github.com/alexmurray/emacs-snap/issues/103 etc
   {
     char *gsettings_schemas_dir, *gschemas_compiled;
     asprintf(&gsettings_schemas_dir, "%s/usr/share/glib-2.0/schemas", snap);
@@ -325,6 +326,24 @@ int main(int argc, char *argv[])
       setenv("GSETTINGS_SCHEMAS_DIR", gsettings_schemas_dir, 1);
     } else {
       fprintf(stderr, "No gschemas.compiled found in %s\n", gsettings_schemas_dir);
+    }
+  }
+
+  // create XDG_RUNTIME_DIR/gvfsd if it does not already exist to avoid
+  // https://github.com/alexmurray/emacs-snap/issues/101 - seems the
+  // GtkFileDialog or similar wants to monitor this directory and complains if
+  // it doesn't exist - it may not exist since the host system is running an
+  // older version of gvfsd-trash (which seems to own sockets within this
+  // directory) but the snap ships a newer gtk which expects it to exist
+  {
+    char *xdg_runtime_dir, *gvfsd_dir;
+    xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
+    if (xdg_runtime_dir) {
+      asprintf(&gvfsd_dir, "%s/gvfsd", xdg_runtime_dir);
+      res = mkdir(gvfsd_dir, S_IRUSR | S_IWUSR | S_IXUSR);
+      if (res < 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create gvfsd dir at %s: %s\n", gvfsd_dir, strerror(errno));
+      }
     }
   }
 
