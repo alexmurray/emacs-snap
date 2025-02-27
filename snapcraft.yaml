@@ -131,7 +131,7 @@ parts:
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0t64
-      - libcanberra-gtk3-module
+      - libcanberra-gtk3-module  # to avoid startup error: Failed to load module "canberra-gtk-module"
       - libcanberra0t64
       - libdatrie1
       - libdb5.3t64
@@ -270,6 +270,7 @@ parts:
       - libxkbcommon0
       - libxrandr2
       - libxrender1
+      - packagekit-gtk3-module # to avoid startup error: Failed to load module "pk-gtk-module"
       - zlib1g
     stage:
       - -usr/share/emacs/site-lisp

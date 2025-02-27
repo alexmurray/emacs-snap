@@ -284,6 +284,17 @@ int main(int argc, char *argv[]) {
     setenv("GTK_IM_MODULE_FILE", gtk_im_module_file, 1);
   }
 
+  // set GTK_PATH to find gtk modules from the snap and not the host to avoid
+  // startup errors like:
+  //
+  // Gtk-Message: 04:21:40.701: Failed to load module "pk-gtk-module"
+  // Gtk-Message: 04:21:40.701: Failed to load module "canberra-gtk-module"
+  {
+    char *gtk_path;
+    asprintf(&gtk_path, "%s/usr/lib/%s/gtk-3.0", snap, arch);
+    setenv("GTK_PATH", gtk_path, 1);
+  }
+
   // set PATH to include binaries from the snap since native comp needs to find
   // as and other similar binaries
   path = getenv("PATH");
