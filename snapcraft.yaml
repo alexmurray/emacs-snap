@@ -330,10 +330,12 @@ parts:
         install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
         ln -sf "emacs-$backend.pdmp" "${pdmp_dir}/emacs-$backend-$(src/emacs-$backend --fingerprint).pdmp"
       done
+
+      glib-compile-schemas $SNAPCRAFT_PART_INSTALL/usr/share/glib-2.0/schemas/
+
     override-stage: |
       set -eu
       craftctl default
-      glib-compile-schemas $SNAPCRAFT_STAGE/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line

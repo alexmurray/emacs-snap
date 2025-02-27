@@ -1,3 +1,10 @@
+/**
+ * This is a helper program to setup the environment for the emacs snap to run
+ * correctly.
+ * Copyright 2025 Alex Murray <murray.alex@gmail.com>
+ * License: GPL-3.0+
+ */
+
 #define _GNU_SOURCE // for asprintf
 
 #include <dirent.h>
@@ -306,6 +313,18 @@ int main(int argc, char *argv[])
     }
   }
 
+  // set GSETTINGS_SCHEMAS_DIR for https://github.com/alexmurray/emacs-snap/issues/103 etc
+  {
+    char *gsettings_schemas_dir, *gschemas_compiled;
+    asprintf(&gsettings_schemas_dir, "%s/usr/share/glib-2.0/schemas", snap);
+    // only set if the file gschemas.compiled is present within this directory
+    asprintf(&gschemas_compiled, "%s/gschemas.compiled", gsettings_schemas_dir);
+    if (access(gschemas_compiled, F_OK) == 0) {
+      setenv("GSETTINGS_SCHEMAS_DIR", gsettings_schemas_dir, 1);
+    } else {
+      fprintf(stderr, "No gschemas.compiled found in %s\n", gsettings_schemas_dir);
+    }
+  }
 
   // finally break out of AppArmor confinement ignoring errors here since this
   // is best effort
