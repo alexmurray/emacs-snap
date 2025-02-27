@@ -267,6 +267,8 @@ int main(int argc, char *argv[])
       // wait for child to execute
       waitpid(child, NULL, 0);
     }
+
+    setenv("GTK_IM_MODULE_FILE", gtk_im_module_file, 1);
   }
 
   // set PATH to include binaries from the snap since native comp needs to find
