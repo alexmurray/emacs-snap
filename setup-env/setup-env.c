@@ -330,7 +330,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // set GSETTINGS_SCHEMAS_DIR for
+  // set GSETTINGS_SCHEMA_DIR for
   // https://github.com/alexmurray/emacs-snap/issues/103 etc
   {
     char *gsettings_schemas_dir, *gschemas_compiled;
@@ -338,7 +338,7 @@ int main(int argc, char *argv[]) {
     // only set if the file gschemas.compiled is present within this directory
     asprintf(&gschemas_compiled, "%s/gschemas.compiled", gsettings_schemas_dir);
     if (access(gschemas_compiled, F_OK) == 0) {
-      setenv("GSETTINGS_SCHEMAS_DIR", gsettings_schemas_dir, 1);
+      setenv("GSETTINGS_SCHEMA_DIR", gsettings_schemas_dir, 1);
     } else {
       fprintf(stderr, "No gschemas.compiled found in %s\n",
               gsettings_schemas_dir);
