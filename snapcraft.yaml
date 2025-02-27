@@ -19,6 +19,12 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
+  The snap contains Emacs compiled for both X11/gtk and wayland/pgtk and will
+  automatically use the pgtk version when running under Wayland. You can
+  override this however by setting the EMACS_TOOLKIT environment variable to
+  either 'wayland' to specify the pgtk backend or 'gtk' to specify the X11/gtk
+  backend.
+
 base: core24
 grade: stable
 confinement: classic
