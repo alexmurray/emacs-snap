@@ -20,6 +20,8 @@
                "GDK_PIXBUF_MODULEDIR"
                "FONTCONFIG_FILE"
                "GTK_IM_MODULE_FILE"
+               "GTK_PATH"
+               "GSETTINGS_SCHEMA_DIR"
                "LD_LIBRARY_PATH"))
   (setenv env))
 

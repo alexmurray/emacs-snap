@@ -19,6 +19,12 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
+  The snap contains Emacs compiled for both X11/gtk and wayland/pgtk and will
+  automatically use the pgtk version when running under Wayland. You can
+  override this however by setting the EMACS_TOOLKIT environment variable to
+  either 'wayland' to specify the pgtk backend or 'gtk' to specify the X11/gtk
+  backend.
+
 base: core24
 grade: stable
 confinement: classic
@@ -79,7 +85,6 @@ parts:
       - libgpm-dev
       - libgtk-3-dev
       - libharfbuzz-dev
-      - libjansson-dev
       - libjpeg-dev
       - liblcms2-dev
       - liblockfile-dev
@@ -126,7 +131,7 @@ parts:
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0t64
-      - libcanberra-gtk3-module
+      - libcanberra-gtk3-module  # to avoid startup error: Failed to load module "canberra-gtk-module"
       - libcanberra0t64
       - libdatrie1
       - libdb5.3t64
@@ -180,7 +185,6 @@ parts:
       - libice6
       - libicu74
       - libisl23
-      - libjansson4
       - libjbig0
       - libjpeg-turbo8
       - libcom-err2
@@ -266,6 +270,7 @@ parts:
       - libxkbcommon0
       - libxrandr2
       - libxrender1
+      - packagekit-gtk3-module # to avoid startup error: Failed to load module "pk-gtk-module"
       - zlib1g
     stage:
       - -usr/share/emacs/site-lisp
@@ -333,10 +338,12 @@ parts:
         install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
         ln -sf "emacs-$backend.pdmp" "${pdmp_dir}/emacs-$backend-$(src/emacs-$backend --fingerprint).pdmp"
       done
+
+      glib-compile-schemas $SNAPCRAFT_PART_INSTALL/usr/share/glib-2.0/schemas/
+
     override-stage: |
       set -eu
       craftctl default
-      glib-compile-schemas $SNAPCRAFT_STAGE/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line
@@ -364,8 +371,15 @@ parts:
       # fix up paths in the various pkg-config files that we ship
       find $SNAPCRAFT_STAGE -name *.pc -exec sed -i "s|prefix=$SNAPCRAFT_STAGE|prefix=/snap/emacs/current|" {} \;
 
-      # finally fixup linker script to use our libc_nonshared.a
+      # finally fixup linker script to use relative path for libc.so.6 and add
+      # multiple search paths to it to fix
+      # https://github.com/alexmurray/emacs-snap/issues/96 and use our
+      # libc_nonshared.a
+      sed -i "s| /lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/| |" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
       sed -i "s| /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a| /snap/emacs/current/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a|" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+      echo 'SEARCH_DIR( /lib/x86_64-linux-gnu )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+      echo 'SEARCH_DIR( /lib64/ )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+
   site-lisp:
     source: site-lisp
     plugin: dump

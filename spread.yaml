@@ -1,0 +1,97 @@
+project: emacs-snap
+
+backends:
+  qemu:
+    systems:
+      # build via autopkgtest-buildvm-ubuntu-cloud and mv to ~/.spread/qemu/
+      - ubuntu-18.04-64:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-20.04-64:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-22.04-64:
+          username: ubuntu
+          password: ubuntu
+      - ubuntu-24.04-64:
+          username: ubuntu
+          password: ubuntu
+
+      # build an image as per
+      # https://blog.strandboge.com/2019/04/16/cloud-images-qemu-cloud-init-and-snapd-spread-tests/
+      - centos-8-64:
+          username: centos
+          password: centos
+      # also build as per jdstrand's blog post but using image from
+      # https://dl.rockylinux.org/pub/rocky/8/images/x86_64/
+      # wget https://dl.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud.latest.x86_64.qcow2
+      # #cp instead of mv so we can try again if we mess it up
+      # cp Rocky-8-GenericCloud.latest.x86_64.qcow2 rockylinux-8-64.img
+      # qemu-img resize rockylinux-8-64.img 20G
+      # cat <<EOF>rockylinux-data
+      # #cloud-config
+      # password: rocky
+      # chpasswd: { expire: false }
+      # ssh_pwauth: true
+      # EOF
+      # cat <<EOF>rockylinux-meta-data
+      # instance-id: i-rockylinux-8-64
+      # local-hostname: rockylinux-8-64
+      # EOF
+      # cloud-localds -v ./rockylinux-seed.img ./rockylinux-data ./rockylinux-meta-data
+      # kvm -M pc -m 1024 -smp 1 -monitor pty -nographic -hda ./rockylinux-8-64.img -drive "file=./rockylinux-seed.img,if=virtio,format=raw" -net nic -net user,hostfwd=tcp:127.0.0.1:59355-:22
+      #
+      # wait for it to boot and finish configuring via cloud-init then in another terminal
+      # ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 59355 rocky@127.0.0.1 sudo touch /etc/cloud/cloud-init.disabled
+      # ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 59355 rocky@127.0.0.1 sudo shutdown -h now
+      # mv rockylinux-8-64.img ~/.spread/qemu/
+      - rockylinux-8-64:
+          username: rocky
+          password: rocky
+
+path: /spread/emacs-snap
+
+exclude:
+  - .git
+  - .github
+  - emacs*.snap
+
+# make sure we don't get killed during prepare
+kill-timeout: 30m
+
+suites:
+  tests/:
+    summary: spread tests
+    prepare: |
+      case $SPREAD_SYSTEM in
+        centos-*|rockylinux-*)
+          if [ $SPREAD_REBOOT = 0 ]; then
+            # disable SELinux since otherwise snapd can't seem to talk to store
+            sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+            REBOOT
+          fi
+          yum update -y
+          yum install -y epel-release
+          yum upgrade -y
+          yum install -y selinux-policy selinux-policy-targeted
+          yum install -y snapd git gcc
+          systemctl enable --now snapd.socket
+          ln -sf /var/lib/snapd/snap /snap
+          snap wait system seed.loaded
+          ;;
+        ubuntu-*)
+          # ensure machine is up to date
+          export DEBIAN_FRONTEND=noninteractive
+          # use apt-get to support older Ubuntu releases
+          apt-get update
+          apt-get -o Dpkg::Options::="--force-confold" -o Dpkg::Options::="--force-confdef" upgrade -y
+          # use apt-get to support older Ubuntu releases
+          apt-get autoremove --purge -y
+          apt install -y snapd git gcc
+          ;;
+        *)
+          echo "ERROR: Unsupported system: $SPREAD_SYSTEM"
+          exit 1
+          ;;
+      esac
+
