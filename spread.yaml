@@ -76,11 +76,11 @@ suites:
             sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
             REBOOT
           fi
-          yum update -y
-          yum install -y epel-release
-          yum upgrade -y
-          yum install -y selinux-policy selinux-policy-targeted
-          yum install -y snapd git gcc
+          dnf update -y
+          dnf install -y epel-release
+          dnf upgrade -y
+          dnf install -y selinux-policy selinux-policy-targeted
+          dnf install -y snapd git gcc
           systemctl enable --now snapd.socket
           ln -sf /var/lib/snapd/snap /snap
           snap wait system seed.loaded
