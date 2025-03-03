@@ -1,0 +1,6 @@
+summary: Test treesitter module compilation
+
+execute: |
+  # test treesit compilation
+  emacs --batch --eval "(progn (require 'treesit) (add-to-list 'treesit-language-source-alist '(c . (\"https://github.com/tree-sitter/tree-sitter-c\"))) (treesit-install-language-grammar 'c))"
+  test -f ~/.emacs.d/tree-sitter/libtree-sitter-c.so
