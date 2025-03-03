@@ -100,9 +100,11 @@ suites:
           exit 1
           ;;
       esac
+
+    prepare-each: |
       snap install emacs --classic --channel $CHANNEL
 
-    restore: |
+    restore-each: |
       snap remove emacs
       rm -rf snap/emacs
       rm -rf .emacs.d
