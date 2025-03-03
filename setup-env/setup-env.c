@@ -463,23 +463,20 @@ int main(int argc, char *argv[]) {
         // link to the schema provided by the snap for any which may be
         // incompatible from the host
         for (i = 0; i < sizeof(overrides) / sizeof(overrides[0]); i++) {
-          // but only worry about it if the schema is already present in the
-          // cache dir
           char *target_path, *link_path;
-          struct stat st;
+
+          if (overrides[i].present) {
+            continue;
+          }
           asprintf(&target_path, "%s/usr/share/glib-2.0/schemas/%s", snap,
                    overrides[i].schema);
           asprintf(&link_path, "%s/%s", gsettings_schema_dir,
                    overrides[i].schema);
-          // check the link path exists
-          res = lstat(link_path, &st);
-          if (res == 0) {
-            unlink(link_path);
-            res = symlink(target_path, link_path);
-            if (res < 0) {
-              fprintf(stderr, "Failed to symlink %s to %s: %s\n", target_path,
-                      link_path, strerror(errno));
-            }
+          unlink(link_path);
+          res = symlink(target_path, link_path);
+          if (res < 0) {
+            fprintf(stderr, "Failed to symlink %s to %s: %s\n", target_path,
+                    link_path, strerror(errno));
           }
         }
 
