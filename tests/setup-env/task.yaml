@@ -25,4 +25,6 @@ execute: |
 
   test -d ~/snap/emacs/common/.cache/schemas
   test -f ~/snap/emacs/common/.cache/schemas/gschemas.compiled
-  [[ $(readlink ~/snap/emacs/common/.cache/schemas/org.gtk.Settings.FileChooser.gschema.xml) == $(realpath /snap/emacs/current/usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml) ]]
+  # use realpath to check for equivalence since on other platforms /snap is a
+  # symlink to /var/lib/snapd/snap
+  [[ $(realpath ~/snap/emacs/common/.cache/schemas/org.gtk.Settings.FileChooser.gschema.xml) == $(realpath /snap/emacs/current/usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml) ]]
