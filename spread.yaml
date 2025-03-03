@@ -59,6 +59,12 @@ exclude:
 # make sure we don't get killed during prepare
 kill-timeout: 30m
 
+environment:
+  CHANNEL/latest_stable: latest/stable
+  CHANNEL/latest_candidate: latest/candidate
+  CHANNEL/latest_beta: latest/beta
+  CHANNEL/latest_edge: latest/edge
+
 suites:
   tests/:
     summary: spread tests
@@ -94,4 +100,12 @@ suites:
           exit 1
           ;;
       esac
+      snap install emacs --classic --channel $CHANNEL
+
+    restore: |
+      snap remove emacs
+      rm -rf snap/emacs
+      rm -rf .emacs.d
+
+
 

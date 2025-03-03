@@ -1,0 +1,11 @@
+summary: Test native compilation
+
+prepare: |
+  echo '(defun foo () (message "foo"))' >> test.el
+
+restore: |
+  rm -f test.el
+
+execute: |
+  # test native compilation
+  emacs --batch --eval '(native-compile "test.el")'
