@@ -48,6 +48,28 @@ backends:
       - rockylinux-8-64:
           username: rocky
           password: rocky
+      # generate a qcow2 image with all default settings from https://console.redhat.com/insights/image-builder
+      # cp ~/Downloads/composer-api-edd06bc1-1011-479e-9749-1ccc28a8a8d0-disk.qcow2 rhel-9-64.img
+      # qemu-img resize rhel-9-64.img 20G
+      # cat <<EOF>rhel-9-data
+      # #cloud-config
+      # password: cloud-user
+      # chpasswd: { expire: false }
+      # ssh_pwauth: true
+      # EOF
+      # cat <<EOF>rhel-9-meta-data
+      # instance-id: i-rhel-9-64
+      # local-hostname: rhel-9-64
+      # EOF
+      # cloud-localds -v ./rhel-9-seed.img ./rhel-9-data ./rhel-9-meta-data
+      # kvm -M pc -m 1024 -smp 1 -monitor pty -nographic -hda ./rhel-9-64.img -drive "file=./rhel-9-seed.img,if=virtio,format=raw" -net nic -net user,hostfwd=tcp:127.0.0.1:59355-:22 -cpu host
+      # # wait for it to boot and finish configuring via cloud-init then in another terminal
+      # ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 59355 cloud-user@127.0.0.1 sudo touch /etc/cloud/cloud-init.disabled
+      # ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 59355 cloud-user@127.0.0.1 sudo shutdown -h now
+      # mv rhel-9-64.img ~/.spread/qemu/
+      - rhel-9-64:
+          username: cloud-user
+          password: cloud-user
 
 path: /spread/emacs-snap
 
@@ -70,11 +92,14 @@ suites:
     summary: spread tests
     prepare: |
       case $SPREAD_SYSTEM in
-        centos-*|rockylinux-*)
+        centos-*|rhel-*|rockylinux-*)
           if [ $SPREAD_REBOOT = 0 ]; then
             # disable SELinux since otherwise snapd can't seem to talk to store
             sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
             REBOOT
+          fi
+          if [[ $SPREAD_SYSTEM == rhel-9-64 ]]; then
+            dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
           fi
           dnf update -y
           dnf install -y epel-release
