@@ -386,8 +386,6 @@ int main(int argc, char *argv[]) {
                overrides[i].schema);
       schema_file = fopen(schema_path, "r");
       if (schema_file == NULL) {
-        fprintf(stderr, "Failed to open %s: %s\n", schema_path,
-                strerror(errno));
         continue;
       }
       while (getline(&line, &len, schema_file) != -1) {
