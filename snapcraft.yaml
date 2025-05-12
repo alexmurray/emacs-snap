@@ -40,8 +40,6 @@ apps:
   emacsclient:
     command: emacsclient
     desktop: usr/share/applications/emacsclient.desktop
-  ctags:
-    command: usr/bin/ctags
   ebrowse:
     command: usr/bin/ebrowse
   etags:
