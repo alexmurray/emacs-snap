@@ -292,25 +292,7 @@ parts:
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-x-resource-name.patch
 
     override-build: |
-      # build with pgtk for wayland
-      env NOCONFIGURE=1 ./autogen.sh
-      ./configure \
-        --prefix=/snap/emacs/current/usr \
-        --with-x-toolkit=gtk3 \
-        --without-xaw3d \
-        --with-modules \
-        --with-cairo \
-        --with-native-compilation=aot \
-        --with-pgtk \
-        --with-xinput2 \
-        --with-tree-sitter
-      env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
-      cp src/emacs src/emacs-wayland
-      cp lib-src/emacsclient lib-src/emacsclient-wayland
-      cp src/emacs.pdmp src/emacs-wayland.pdmp
-
-      # then build without pgtk as well
-      make maintainer-clean
+      # build without pgtk for x11 first
       env NOCONFIGURE=1 ./autogen.sh
       ./configure \
         --prefix=/snap/emacs/current/usr \
@@ -326,6 +308,24 @@ parts:
       cp src/emacs src/emacs-gtk
       cp lib-src/emacsclient lib-src/emacsclient-gtk
       cp src/emacs.pdmp src/emacs-gtk.pdmp
+
+      # then build with pgtk as well
+      make maintainer-clean
+      env NOCONFIGURE=1 ./autogen.sh
+      ./configure \
+        --prefix=/snap/emacs/current/usr \
+        --with-x-toolkit=gtk3 \
+        --without-xaw3d \
+        --with-modules \
+        --with-cairo \
+        --with-native-compilation=aot \
+        --with-pgtk \
+        --with-xinput2 \
+        --with-tree-sitter
+      env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
+      cp src/emacs src/emacs-wayland
+      cp lib-src/emacsclient lib-src/emacsclient-wayland
+      cp src/emacs.pdmp src/emacs-wayland.pdmp
 
       make install DESTDIR="${SNAPCRAFT_PART_INSTALL}"
 
