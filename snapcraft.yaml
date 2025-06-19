@@ -1,6 +1,6 @@
 name: emacs
 title: GNU Emacs
-adopt-info: emacs
+version: "30.1"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -19,6 +19,10 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
+  The snap offers both the 'gtk' and 'pgtk' variants in separate snap tracks -
+  the 'latest' track offers the gtk variant whereas the 'pgtk' track offers the
+  pgtk variant of emacs.
+
 base: core24
 grade: stable
 confinement: classic
@@ -29,10 +33,10 @@ apps:
   emacs:
     command-chain:
       - setup-env
-    command: emacs
+    command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
   emacsclient:
-    command: emacsclient
+    command: usr/bin/emacsclient
     desktop: usr/share/applications/emacsclient.desktop
   ctags:
     command: usr/bin/ctags
@@ -47,7 +51,7 @@ parts:
     build-attributes:
       - enable-patchelf
     source: https://github.com/tree-sitter/tree-sitter.git
-    source-tag: v0.25.2
+    source-tag: v0.25.6
     build-environment:
       - PREFIX: "/usr"
   emacs:
@@ -55,8 +59,8 @@ parts:
     plugin: nil
     build-attributes:
       - enable-patchelf
-    source: https://github.com/emacs-mirror/emacs.git
-    source-depth: 1
+    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-30.1.tar.xz
+    source-checksum: sha256/6ccac1ae76e6af93c6de1df175e8eb406767c23da3dd2a16aa67e3124a6f138f
     organize:
       snap/emacs/current/usr: usr
     build-packages:
@@ -79,7 +83,6 @@ parts:
       - libgpm-dev
       - libgtk-3-dev
       - libharfbuzz-dev
-      - libjansson-dev
       - libjpeg-dev
       - liblcms2-dev
       - liblockfile-dev
@@ -126,7 +129,7 @@ parts:
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0t64
-      - libcanberra-gtk3-module
+      - libcanberra-gtk3-module  # to avoid startup error: Failed to load module "canberra-gtk-module"
       - libcanberra0t64
       - libdatrie1
       - libdb5.3t64
@@ -180,7 +183,6 @@ parts:
       - libice6
       - libicu74
       - libisl23
-      - libjansson4
       - libjbig0
       - libjpeg-turbo8
       - libcom-err2
@@ -266,6 +268,7 @@ parts:
       - libxkbcommon0
       - libxrandr2
       - libxrender1
+      - packagekit-gtk3-module # to avoid startup error: Failed to load module "pk-gtk-module"
       - zlib1g
     stage:
       - -usr/share/emacs/site-lisp
@@ -277,18 +280,13 @@ parts:
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
-      craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
       # ensure we hard-code our copy of gcc-14 and g++14 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
 
-      # also hard-code the default x resource name to emacs rather than using
-      # the invocation name (which is emacs-gtk or similar)
-      patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-x-resource-name.patch
-
     override-build: |
-      # build with pgtk for wayland
+      # build with pgtk
       env NOCONFIGURE=1 ./autogen.sh
       ./configure \
         --prefix=/snap/emacs/current/usr \
@@ -301,42 +299,14 @@ parts:
         --with-xinput2 \
         --with-tree-sitter
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
-      cp src/emacs src/emacs-wayland
-      cp lib-src/emacsclient lib-src/emacsclient-wayland
-      cp src/emacs.pdmp src/emacs-wayland.pdmp
-
-      # then build without pgtk as well
-      make maintainer-clean
-      env NOCONFIGURE=1 ./autogen.sh
-      ./configure \
-        --prefix=/snap/emacs/current/usr \
-        --with-x-toolkit=gtk3 \
-        --without-xaw3d \
-        --with-modules \
-        --with-cairo \
-        --with-native-compilation=aot \
-        --without-pgtk \
-        --with-xinput2 \
-        --with-tree-sitter
-      env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
-      cp src/emacs src/emacs-gtk
-      cp lib-src/emacsclient lib-src/emacsclient-gtk
-      cp src/emacs.pdmp src/emacs-gtk.pdmp
 
       make install DESTDIR="${SNAPCRAFT_PART_INSTALL}"
 
-      for backend in gtk wayland; do
-        install -m 0755 src/emacs-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
-        install -m 0755 lib-src/emacsclient-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
-        # cheat by using the already installed pdmp file from above as a template
-        pdmp_dir=$(dirname $(ls -1 $SNAPCRAFT_PART_INSTALL/snap/emacs/current/usr/libexec/emacs/*/*/emacs-*.pdmp | head -n1))
-        install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
-        ln -sf "emacs-$backend.pdmp" "${pdmp_dir}/emacs-$backend-$(src/emacs-$backend --fingerprint).pdmp"
-      done
+      glib-compile-schemas $SNAPCRAFT_PART_INSTALL/usr/share/glib-2.0/schemas/
+
     override-stage: |
       set -eu
       craftctl default
-      glib-compile-schemas $SNAPCRAFT_STAGE/usr/share/glib-2.0/schemas/
       # Fix-up application icon lookup
       sed -i -e 's|^Icon=.*|Icon=usr/share/icons/hicolor/scalable/apps/emacs.svg|g' usr/share/applications/emacs*.desktop
       # also fixup emacsclient.desktop file since snapd replaces the Exec= line
@@ -364,8 +334,15 @@ parts:
       # fix up paths in the various pkg-config files that we ship
       find $SNAPCRAFT_STAGE -name *.pc -exec sed -i "s|prefix=$SNAPCRAFT_STAGE|prefix=/snap/emacs/current|" {} \;
 
-      # finally fixup linker script to use our libc_nonshared.a
+      # finally fixup linker script to use relative path for libc.so.6 and add
+      # multiple search paths to it to fix
+      # https://github.com/alexmurray/emacs-snap/issues/96 and use our
+      # libc_nonshared.a
+      sed -i "s| /lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/| |" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
       sed -i "s| /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a| /snap/emacs/current/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a|" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+      echo 'SEARCH_DIR( /lib/x86_64-linux-gnu )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+      echo 'SEARCH_DIR( /lib64/ )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+
   site-lisp:
     source: site-lisp
     plugin: dump
@@ -378,9 +355,3 @@ parts:
       - enable-patchelf
     stage:
       - setup-env
-  scripts:
-    source: .
-    plugin: dump
-    stage:
-      - emacsclient
-      - emacs

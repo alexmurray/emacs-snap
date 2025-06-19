@@ -1,3 +1,10 @@
+/**
+ * This is a helper program to setup the environment for the emacs snap to run
+ * correctly.
+ * Copyright 2025 Alex Murray <murray.alex@gmail.com>
+ * License: GPL-3.0+
+ */
+
 #define _GNU_SOURCE // for asprintf
 
 #include <dirent.h>
@@ -13,11 +20,20 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// check if str ends with suffix
+int str_ends_with(const char *str, const char *suffix) {
+  size_t str_len = strlen(str);
+  size_t suffix_len = strlen(suffix);
+  if (suffix_len > str_len) {
+    return 0;
+  }
+  return strncmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
+}
+
 // NOTE: in general we don't bother to free any of the dynamically allocated
 // memory since this is not a long-lived process so we don't care about memory
 // leaks as it will all get cleaned up when the process exits
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   int res;
   struct stat st;
   const char *snap;
@@ -47,6 +63,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "SNAP_ARCH is not set\n");
     exit(1);
   }
+
   if (strcmp(snap_arch, "amd64") == 0) {
     asprintf(&arch, "x86_64-linux-gnu");
   } else if (strcmp(snap_arch, "armhf") == 0) {
@@ -66,17 +83,21 @@ int main(int argc, char *argv[])
   asprintf(&gdk_cache_dir, "%s/.cache", snap_user_common);
   mkdir(gdk_cache_dir, 0700);
 
-  asprintf(&gio_module_dir, "%s/usr/lib/%s/gio/modules", snap,  arch);
+  asprintf(&gio_module_dir, "%s/usr/lib/%s/gio/modules", snap, arch);
   setenv("GIO_MODULE_DIR", gio_module_dir, 1);
 
-  asprintf(&gdk_pixbuf_module_file, "%s/gdk-pixbuf-loaders.cache", gdk_cache_dir);
+  asprintf(&gdk_pixbuf_module_file, "%s/gdk-pixbuf-loaders.cache",
+           gdk_cache_dir);
   setenv("GDK_PIXBUF_MODULE_FILE", gdk_pixbuf_module_file, 1);
 
-  asprintf(&gdk_pixbuf_moduledir, "%s/usr/lib/%s/gdk-pixbuf-2.0/2.10.0/loaders", snap, arch);
+  asprintf(&gdk_pixbuf_moduledir, "%s/usr/lib/%s/gdk-pixbuf-2.0/2.10.0/loaders",
+           snap, arch);
   setenv("GDK_PIXBUF_MODULEDIR", gdk_pixbuf_moduledir, 1);
 
-  asprintf(&gdk_pixbuf_query_loaders, "%s/usr/lib/%s/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders", snap, arch);
+  asprintf(&gdk_pixbuf_query_loaders,
+           "%s/usr/lib/%s/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders", snap, arch);
   res = stat(gdk_pixbuf_query_loaders, &st);
+
   if (res == 0) {
     // execute gdk_pixbuf_query_loaders and redirect output to
     // gdk_pixbuf_module_file
@@ -90,7 +111,8 @@ int main(int argc, char *argv[])
       // exec gdk_pixbuf_query_loaders
       int fd = open(gdk_pixbuf_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
       if (fd < 0) {
-        fprintf(stderr, "Failed to open %s: %s\n", gdk_pixbuf_module_file, strerror(errno));
+        fprintf(stderr, "Failed to open %s: %s\n", gdk_pixbuf_module_file,
+                strerror(errno));
         exit(1);
       }
       res = dup2(fd, 1);
@@ -100,7 +122,8 @@ int main(int argc, char *argv[])
       }
       res = execl(gdk_pixbuf_query_loaders, gdk_pixbuf_query_loaders, NULL);
       if (res < 0) {
-        fprintf(stderr, "Failed to exec %s: %s\n", gdk_pixbuf_query_loaders, strerror(errno));
+        fprintf(stderr, "Failed to exec %s: %s\n", gdk_pixbuf_query_loaders,
+                strerror(errno));
         exit(1);
       }
     }
@@ -133,15 +156,19 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Failed to compile regex\n");
       exit(1);
     }
-    asprintf(&cachedir_entry, "	<cachedir>%s</cachedir>\n", fontconfig_cache_dir);
+    asprintf(&cachedir_entry, "	<cachedir>%s</cachedir>\n",
+             fontconfig_cache_dir);
     asprintf(&source_path, "%s/etc/fonts/fonts.conf", snap);
     infd = open(source_path, O_RDONLY);
     if (infd == -1) {
-      fprintf(stderr, "Failed to open source fontconfig file %s: %s\n", source_path, strerror(errno));
+      fprintf(stderr, "Failed to open source fontconfig file %s: %s\n",
+              source_path, strerror(errno));
     }
-    outfd = open(fontconfig_file, O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC, 0644);
+    outfd =
+      open(fontconfig_file, O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC, 0644);
     if (outfd == -1) {
-      fprintf(stderr, "Failed to open dest fontconfig file %s: %s\n", fontconfig_file, strerror(errno));
+      fprintf(stderr, "Failed to open dest fontconfig file %s: %s\n",
+              fontconfig_file, strerror(errno));
     }
     res = fstat(infd, &st);
     if (res == -1) {
@@ -149,7 +176,8 @@ int main(int argc, char *argv[])
     }
     infile = fdopen(infd, "r");
     if (infile == NULL) {
-      fprintf(stderr, "Failed to open %s for streaming: %s\n", source_path, strerror(errno));
+      fprintf(stderr, "Failed to open %s for streaming: %s\n", source_path,
+              strerror(errno));
     }
     // read infd line by line and write the output to outfd - check along the
     // way for cachedir entries and replace these with our own
@@ -176,7 +204,8 @@ int main(int argc, char *argv[])
   mkdir(gtk_im_module_dir, 0700);
 
   asprintf(&gtk_im_module_file, "%s/immodules.cache", gtk_im_module_dir);
-  asprintf(&gtk_query_immodules, "%s/usr/lib/%s/libgtk-3-0/gtk-query-immodules-3.0", snap, arch);
+  asprintf(&gtk_query_immodules,
+           "%s/usr/lib/%s/libgtk-3-0/gtk-query-immodules-3.0", snap, arch);
   res = stat(gtk_query_immodules, &st);
   if (res == 0) {
     // execute gtk_query_immodules over the list of immodules and redirect
@@ -191,13 +220,15 @@ int main(int argc, char *argv[])
     // first argument should be program name as argv[0]
     args = realloc(args, (nargs + 1) * sizeof(char *));
     if (args == NULL) {
-      fprintf(stderr, "Failed to allocate argument list: %s\n", strerror(errno));
+      fprintf(stderr, "Failed to allocate argument list: %s\n",
+              strerror(errno));
       exit(1);
     }
     args[0] = strdup(gtk_query_immodules);
     nargs++;
 
-    asprintf(&gtk_immodules_path, "%s/usr/lib/%s/gtk-3.0/3.0.0/immodules", snap, arch);
+    asprintf(&gtk_immodules_path, "%s/usr/lib/%s/gtk-3.0/3.0.0/immodules", snap,
+             arch);
     dir = opendir(gtk_immodules_path);
     while (dir != NULL && (entry = readdir(dir)) != NULL) {
       // if starts with im- and ends with .so then append this to the list of
@@ -231,42 +262,55 @@ int main(int argc, char *argv[])
       args[nargs] = NULL;
     }
 
-    fork:
-    {
-      pid_t child = fork();
-      if (child == -1) {
-        fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+  fork: {
+    pid_t child = fork();
+    if (child == -1) {
+      fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+      exit(1);
+    }
+    if (child == 0) {
+      // we are the child - redirect our output to gtk_im_module_file and
+      // exec gtk_query_immodules with args as arguments
+      int fd = open(gtk_im_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+      if (fd < 0) {
+        fprintf(stderr, "Failed to open %s: %s\n", gtk_im_module_file,
+                strerror(errno));
         exit(1);
       }
-      if (child == 0) {
-        // we are the child - redirect our output to gtk_im_module_file and
-        // exec gtk_query_immodules with args as arguments
-        int fd = open(gtk_im_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
-        if (fd < 0) {
-          fprintf(stderr, "Failed to open %s: %s\n", gtk_im_module_file, strerror(errno));
-          exit(1);
-        }
-        res = dup2(fd, 1);
-        if (res < 0) {
-          fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
-          exit(1);
-        }
-        res = execv(gtk_query_immodules, args);
-        if (res < 0) {
-          fprintf(stderr, "Failed to exec %s: %s\n", gtk_query_immodules, strerror(errno));
-          exit(1);
-        }
+      res = dup2(fd, 1);
+      if (res < 0) {
+        fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
+        exit(1);
       }
-      // wait for child to execute
-      waitpid(child, NULL, 0);
+      res = execv(gtk_query_immodules, args);
+      if (res < 0) {
+        fprintf(stderr, "Failed to exec %s: %s\n", gtk_query_immodules,
+                strerror(errno));
+        exit(1);
+      }
     }
+    // wait for child to execute
+    waitpid(child, NULL, 0);
+  }
+
+    setenv("GTK_IM_MODULE_FILE", gtk_im_module_file, 1);
+  }
+
+  // set GTK_PATH to find gtk modules from the snap and not the host to avoid
+  // startup errors like:
+  //
+  // Gtk-Message: 04:21:40.701: Failed to load module "pk-gtk-module"
+  // Gtk-Message: 04:21:40.701: Failed to load module "canberra-gtk-module"
+  {
+    char *gtk_path;
+    asprintf(&gtk_path, "%s/usr/lib/%s/gtk-3.0", snap, arch);
+    setenv("GTK_PATH", gtk_path, 1);
   }
 
   // set PATH to include binaries from the snap since native comp needs to find
   // as and other similar binaries
   path = getenv("PATH");
-  if (path != NULL)
-  {
+  if (path != NULL) {
     char *new_path;
     asprintf(&new_path, "%s:%s/usr/bin", path, snap);
     setenv("PATH", new_path, 1);
@@ -279,7 +323,8 @@ int main(int argc, char *argv[])
     asprintf(&sysroot, "%s/sysroot", snap_user_common);
     res = mkdir(sysroot, S_IRUSR | S_IWUSR | S_IXUSR);
     if (res < 0 && errno != EEXIST) {
-      fprintf(stderr, "Failed to create sysroot dir at %s: %s\n", sysroot, strerror(errno));
+      fprintf(stderr, "Failed to create sysroot dir at %s: %s\n", sysroot,
+              strerror(errno));
       exit(1);
     }
     asprintf(&target, "%s/usr", snap);
@@ -287,7 +332,8 @@ int main(int argc, char *argv[])
     unlink(linkpath);
     res = symlink(target, linkpath);
     if (res < 0 && errno != EEXIST) {
-      fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath, strerror(errno));
+      fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath,
+              strerror(errno));
       exit(1);
     }
 
@@ -300,12 +346,193 @@ int main(int argc, char *argv[])
       unlink(linkpath);
       res = symlink(target, linkpath);
       if (res < 0 && errno != EEXIST) {
-        fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath, strerror(errno));
+        fprintf(stderr, "Failed to symlink %s to %s: %s\n", target, linkpath,
+                strerror(errno));
         exit(1);
       }
     }
   }
 
+  // set GSETTINGS_SCHEMA_DIR for
+  // https://github.com/alexmurray/emacs-snap/issues/103 and
+  // https://github.com/alexmurray/emacs-snap/issues/104 by taking the host
+  // system's gsettings schemas and patching them to match what is expected by
+  // the version of GTK etc shipped in the snap - this is a best effort to make
+  // sure that the gsettings schemas are compatible between the host system and
+  // the snap and also that we respect the host system's settings
+  {
+    struct override {
+      const char *schema;
+      const char *key; // if key is not present then the whole schema is
+                       // overridden
+      int present;
+    };
+    struct override overrides[] = {
+      // https://github.com/alexmurray/emacs-snap/issues/101#issuecomment-2684232893
+      {"org.gtk.Settings.FileChooser.gschema.xml", "show-type-column"},
+    };
+    int i;
+
+    for (i = 0; i < sizeof(overrides) / sizeof(overrides[0]); i++) {
+      // for each override, check if key is present in schema on host
+      char *schema_path;
+      FILE *schema_file;
+      char *line = NULL;
+      size_t len = 0;
+
+      overrides[i].present = 0;
+
+      asprintf(&schema_path, "/usr/share/glib-2.0/schemas/%s",
+               overrides[i].schema);
+      schema_file = fopen(schema_path, "r");
+      if (schema_file == NULL) {
+        continue;
+      }
+      while (getline(&line, &len, schema_file) != -1) {
+        if (strstr(line, overrides[i].key) != NULL) {
+          overrides[i].present = 1;
+          free(line);
+          line = NULL;
+          break;
+        }
+        free(line);
+        line = NULL;
+      }
+      fclose(schema_file);
+      free(schema_path);
+    }
+
+    // if any schemas are missing from the host then we need to duplicate the
+    // hosts schemas but with the overrides from the snap for any missing ones
+    int needed = 0;
+    for (i = 0; i < sizeof(overrides) / sizeof(overrides[0]); i++) {
+      needed += !overrides[i].present;
+    }
+    if (needed) {
+      char *gsettings_schema_dir, *gschemas_compiled;
+      struct stat host_st, snap_st;
+
+      asprintf(&gsettings_schema_dir, "%s/.cache/schemas", snap_user_common);
+      mkdir(gsettings_schema_dir, 0700);
+
+      asprintf(&gschemas_compiled, "%s/gschemas.compiled",
+               gsettings_schema_dir);
+      res = stat("/usr/share/glib-2.0/schemas/gschemas.compiled", &host_st);
+      res |= stat(gschemas_compiled, &snap_st);
+      // if the gschemas.compiled file does not exist or the modification time
+      // of it is older than the hosts then duplicate the host's gsettings
+      // schemas with overrides to the snap's schemas and then compile them all
+      if (res != 0 || host_st.st_mtime > snap_st.st_mtime) {
+        DIR *dir;
+        struct dirent *entry;
+
+        // remove any existing symlinks etc in the cache dir
+        dir = opendir(gsettings_schema_dir);
+        while ((entry = readdir(dir)) != NULL) {
+          if (entry->d_type == DT_LNK || entry->d_type == DT_REG) {
+            char *link_path;
+            asprintf(&link_path, "%s/%s", gsettings_schema_dir, entry->d_name);
+            unlink(link_path);
+          }
+        }
+
+        // duplicate the host's gsettings schemas to the snap's cache dir
+        dir = opendir("/usr/share/glib-2.0/schemas");
+        while ((entry = readdir(dir)) != NULL) {
+          if (entry->d_type == DT_REG &&
+              // only worry about .enums.xml, gschema.xml or .gschema.override
+              // files
+              (str_ends_with(entry->d_name, ".enums.xml") ||
+               str_ends_with(entry->d_name, ".gschema.xml") ||
+               str_ends_with(entry->d_name, ".gschema.override"))) {
+            char *target_path, *link_path;
+            asprintf(&target_path, "/usr/share/glib-2.0/schemas/%s",
+                     entry->d_name);
+            asprintf(&link_path, "%s/%s", gsettings_schema_dir, entry->d_name);
+            unlink(link_path);
+            // symlink so we don't have to copy the schemas
+            res = symlink(target_path, link_path);
+            if (res < 0) {
+              fprintf(stderr, "Failed to symlink %s to %s: %s\n", target_path,
+                      link_path, strerror(errno));
+            }
+          }
+        }
+        // link to the schema provided by the snap for any which may be
+        // incompatible from the host
+        for (i = 0; i < sizeof(overrides) / sizeof(overrides[0]); i++) {
+          char *target_path, *link_path;
+
+          if (overrides[i].present) {
+            continue;
+          }
+          asprintf(&target_path, "%s/usr/share/glib-2.0/schemas/%s", snap,
+                   overrides[i].schema);
+          asprintf(&link_path, "%s/%s", gsettings_schema_dir,
+                   overrides[i].schema);
+          unlink(link_path);
+          res = symlink(target_path, link_path);
+          if (res < 0) {
+            fprintf(stderr, "Failed to symlink %s to %s: %s\n", target_path,
+                    link_path, strerror(errno));
+          }
+        }
+
+        // now we need to compile our frankenschema
+        unlink(gschemas_compiled);
+
+        pid_t child = fork();
+        if (child == -1) {
+          fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+          exit(1);
+        }
+        if (child == 0) {
+          // we are the child - exec glib-compile-schemas
+          char *glib_compile_schemas;
+          asprintf(&glib_compile_schemas, "%s/usr/bin/glib-compile-schemas",
+                   snap);
+          res = execl(glib_compile_schemas, glib_compile_schemas,
+                      gsettings_schema_dir, NULL);
+          if (res < 0) {
+            fprintf(stderr, "Failed to exec %s: %s\n", glib_compile_schemas,
+                    strerror(errno));
+            exit(1);
+          }
+        }
+        // wait for child
+        waitpid(child, NULL, 0);
+
+        // check for presence of gschemas.compiled file
+        res = access(gschemas_compiled, F_OK);
+        if (res < 0) {
+          fprintf(stderr, "Failed to compile schemas: %s not found\n",
+                  gschemas_compiled);
+        }
+      }
+
+      // set GSETTINGS_SCHEMA_DIR to the snap's cache dir
+      setenv("GSETTINGS_SCHEMA_DIR", gsettings_schema_dir, 1);
+    }
+  }
+
+  // create XDG_RUNTIME_DIR/gvfsd if it does not already exist to avoid
+  // https://github.com/alexmurray/emacs-snap/issues/101 - seems the
+  // GtkFileDialog or similar wants to monitor this directory and complains if
+  // it doesn't exist - it may not exist since the host system is running an
+  // older version of gvfsd-trash (which seems to own sockets within this
+  // directory) but the snap ships a newer gtk which expects it to exist
+  {
+    char *xdg_runtime_dir, *gvfsd_dir;
+    xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
+    if (xdg_runtime_dir) {
+      asprintf(&gvfsd_dir, "%s/gvfsd", xdg_runtime_dir);
+      res = mkdir(gvfsd_dir, S_IRUSR | S_IWUSR | S_IXUSR);
+      if (res < 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create gvfsd dir at %s: %s\n", gvfsd_dir,
+                strerror(errno));
+      }
+    }
+  }
 
   // finally break out of AppArmor confinement ignoring errors here since this
   // is best effort
@@ -321,8 +548,8 @@ int main(int argc, char *argv[])
     // unconfined
     if (strncmp(label, "snap.emacs.", strlen("snap.emacs.")) == 0 &&
         strlen(label) > strlen("(complain)") &&
-        strncmp(label + strlen(label) - strlen("(complain)"),
-                "(complain)", strlen("(complain)")) == 0) {
+        strncmp(label + strlen(label) - strlen("(complain)"), "(complain)",
+                strlen("(complain)")) == 0) {
       // ignore errors here too
       fd = open("/proc/self/attr/current", O_WRONLY | O_APPEND);
       write(fd, "changeprofile unconfined", strlen("changeprofile unconfined"));
@@ -335,7 +562,6 @@ int main(int argc, char *argv[])
     execv(argv[1], &argv[1]);
   }
 
- exit:
+exit:
   exit(0);
 }
-

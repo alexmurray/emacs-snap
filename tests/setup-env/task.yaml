@@ -1,0 +1,30 @@
+summary: Test setup-env
+
+prepare: |
+  # make sure we have some schemas to work with
+  if [ ! -f /usr/share/glib-2.0/schemas/gschemas.compiled ]; then
+    cp /snap/emacs/current/usr/share/glib-2.0/schemas/*.xml /usr/share/glib-2.0/schemas
+  fi
+  if [ -f /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml ]; then
+    mv /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml.bak
+  fi
+
+restore: |
+  if [ -f /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml.bak ]; then
+    mv /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml.bak /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml
+  fi
+  if [ ! -f /usr/share/glib-2.0/schemas/gschemas.compiled ]; then
+    rm -f /usr/share/glib-2.0/schemas/*.xml
+  fi
+
+execute: |
+  ! test -d ~/snap/emacs/common/.cache/schemas
+
+  # test gschemas handling
+  emacs --batch --eval '(kill-emacs)'
+
+  test -d ~/snap/emacs/common/.cache/schemas
+  test -f ~/snap/emacs/common/.cache/schemas/gschemas.compiled
+  # use realpath to check for equivalence since on other platforms /snap is a
+  # symlink to /var/lib/snapd/snap
+  [[ $(realpath ~/snap/emacs/common/.cache/schemas/org.gtk.Settings.FileChooser.gschema.xml) == $(realpath /snap/emacs/current/usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml) ]]
