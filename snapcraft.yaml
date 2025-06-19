@@ -24,7 +24,7 @@ description: |
   pgtk variant of emacs.
 
 base: core24
-grade: stable
+grade: devel
 confinement: classic
 license: GPL-3.0+
 compression: lzo
