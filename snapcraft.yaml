@@ -285,7 +285,7 @@ parts:
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
 
     override-build: |
-      # build without pgtk
+      # build with pgtk
       env NOCONFIGURE=1 ./autogen.sh
       ./configure \
         --prefix=/snap/emacs/current/usr \
@@ -294,7 +294,7 @@ parts:
         --with-modules \
         --with-cairo \
         --with-native-compilation=aot \
-        --without-pgtk \
+        --with-pgtk \
         --with-xinput2 \
         --with-tree-sitter
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
