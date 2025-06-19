@@ -1,4 +1,4 @@
-;;; site-start.el --- Make Emacs work correctly as a snap
+;;; site-start.el --- Make Emacs work correctly as a snap -*- lexical-binding: t -*-
 
 ;;; Commentary:
 
