@@ -64,6 +64,10 @@ environment:
   CHANNEL/latest_candidate: latest/candidate
   CHANNEL/latest_beta: latest/beta
   CHANNEL/latest_edge: latest/edge
+  CHANNEL/pgtk_stable: pgtk/stable
+  CHANNEL/pgtk_candidate: pgtk/candidate
+  CHANNEL/pgtk_beta: pgtk/beta
+  CHANNEL/pgtk_edge: pgtk/edge
 
 suites:
   tests/:
