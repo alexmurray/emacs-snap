@@ -19,11 +19,9 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
-  The snap contains Emacs compiled for both X11/gtk and wayland/pgtk and will
-  automatically use the pgtk version when running under Wayland. You can
-  override this however by setting the EMACS_TOOLKIT environment variable to
-  either 'wayland' to specify the pgtk backend or 'gtk' to specify the X11/gtk
-  backend.
+  The snap offers both the 'gtk' and 'pgtk' variants in separate snap tracks -
+  the 'latest' track offers the gtk variant whereas the 'pgtk' track offers the
+  pgtk variant of emacs.
 
 base: core24
 grade: stable
@@ -35,10 +33,10 @@ apps:
   emacs:
     command-chain:
       - setup-env
-    command: emacs
+    command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
   emacsclient:
-    command: emacsclient
+    command: usr/bin/emacsclient
     desktop: usr/share/applications/emacsclient.desktop
   ctags:
     command: usr/bin/ctags
@@ -292,7 +290,7 @@ parts:
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-x-resource-name.patch
 
     override-build: |
-      # build without pgtk for x11 first
+      # build without pgtk
       env NOCONFIGURE=1 ./autogen.sh
       ./configure \
         --prefix=/snap/emacs/current/usr \
@@ -305,38 +303,8 @@ parts:
         --with-xinput2 \
         --with-tree-sitter
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
-      cp src/emacs src/emacs-gtk
-      cp lib-src/emacsclient lib-src/emacsclient-gtk
-      cp src/emacs.pdmp src/emacs-gtk.pdmp
-
-      # then build with pgtk as well
-      make maintainer-clean
-      env NOCONFIGURE=1 ./autogen.sh
-      ./configure \
-        --prefix=/snap/emacs/current/usr \
-        --with-x-toolkit=gtk3 \
-        --without-xaw3d \
-        --with-modules \
-        --with-cairo \
-        --with-native-compilation=aot \
-        --with-pgtk \
-        --with-xinput2 \
-        --with-tree-sitter
-      env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
-      cp src/emacs src/emacs-wayland
-      cp lib-src/emacsclient lib-src/emacsclient-wayland
-      cp src/emacs.pdmp src/emacs-wayland.pdmp
 
       make install DESTDIR="${SNAPCRAFT_PART_INSTALL}"
-
-      for backend in gtk wayland; do
-        install -m 0755 src/emacs-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
-        install -m 0755 lib-src/emacsclient-$backend $SNAPCRAFT_PART_INSTALL/usr/bin/
-        # cheat by using the already installed pdmp file from above as a template
-        pdmp_dir=$(dirname $(ls -1 $SNAPCRAFT_PART_INSTALL/snap/emacs/current/usr/libexec/emacs/*/*/emacs-*.pdmp | head -n1))
-        install -m 0644 "src/emacs-$backend.pdmp" "${pdmp_dir}"
-        ln -sf "emacs-$backend.pdmp" "${pdmp_dir}/emacs-$backend-$(src/emacs-$backend --fingerprint).pdmp"
-      done
 
       glib-compile-schemas $SNAPCRAFT_PART_INSTALL/usr/share/glib-2.0/schemas/
 
@@ -391,9 +359,3 @@ parts:
       - enable-patchelf
     stage:
       - setup-env
-  scripts:
-    source: .
-    plugin: dump
-    stage:
-      - emacsclient
-      - emacs
