@@ -285,10 +285,6 @@ parts:
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
 
-      # also hard-code the default x resource name to emacs rather than using
-      # the invocation name (which is emacs-gtk or similar)
-      patch -p1 < $SNAPCRAFT_PROJECT_DIR/emacs-x-resource-name.patch
-
     override-build: |
       # build without pgtk
       env NOCONFIGURE=1 ./autogen.sh
