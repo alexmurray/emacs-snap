@@ -128,6 +128,7 @@ parts:
       - libcairo2
       - libcanberra-gtk3-0t64
       - libcanberra-gtk3-module  # to avoid startup error: Failed to load module "canberra-gtk-module"
+      - libcanberra-pulse
       - libcanberra0t64
       - libdatrie1
       - libdb5.3t64
