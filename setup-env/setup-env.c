@@ -49,6 +49,12 @@ static int nftw_unlink(const char *fpath, const struct stat *sb, int typeflag,
                        struct FTW *ftwbuf) {
   int res;
 
+  if (ftwbuf->level == 0) {
+    // skip the root directory
+    dbg("Skipping root directory %s\n", fpath);
+    return 0;
+  }
+
   // unlink files
   switch (typeflag) {
   case FTW_F:
@@ -193,13 +199,10 @@ int main(int argc, char *argv[]) {
   overwrite = overwrite | !!getenv("SNAP_SETUP_ENV_OVERWRITE");
 
   if (overwrite) {
-    dbg("Overwriting existing environment setup in %s\n", snap_user_common);
+    dbg("Removing existing environment setup in %s\n", snap_user_common);
     // remove and recreate SNAP_USER_COMMON entirely including all its contents
-    nftw(snap_user_common, nftw_unlink, 10, FTW_DEPTH | FTW_PHYS);
-    res =
-      mkdir(snap_user_common, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-    if (res < 0) {
-      fprintf(stderr, "Failed to create %s: %s\n", snap_user_common,
+    if (nftw(snap_user_common, nftw_unlink, 10, FTW_DEPTH | FTW_PHYS) != 0) {
+      fprintf(stderr, "Failed to remove contents of %s: %s\n", snap_user_common,
               strerror(errno));
       exit(1);
     }
