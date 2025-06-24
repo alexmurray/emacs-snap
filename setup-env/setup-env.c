@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <ftw.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,8 +21,22 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#ifndef VARIANT
+// should be set by Makefile based on the git branch name
+#define VARIANT "unknown"
+#endif
+
+static int debug = 0;
+
+#define dbg(fmt, ...)                                                          \
+  do {                                                                         \
+    if (debug) {                                                               \
+      fprintf(stderr, "%s:%d: " fmt, __FILE__, __LINE__, ##__VA_ARGS__);       \
+    }                                                                          \
+  } while (0)
+
 // check if str ends with suffix
-int str_ends_with(const char *str, const char *suffix) {
+static int str_ends_with(const char *str, const char *suffix) {
   size_t str_len = strlen(str);
   size_t suffix_len = strlen(suffix);
   if (suffix_len > str_len) {
@@ -30,16 +45,56 @@ int str_ends_with(const char *str, const char *suffix) {
   return strncmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
 }
 
+static int nftw_unlink(const char *fpath, const struct stat *sb, int typeflag,
+                       struct FTW *ftwbuf) {
+  int res;
+
+  // unlink files
+  switch (typeflag) {
+  case FTW_F:
+  case FTW_SL:
+  case FTW_SLN:
+    // regular file or symbolic link
+    dbg("Unlinking %s\n", fpath);
+    res = unlink(fpath);
+    if (res < 0) {
+      fprintf(stderr, "Failed to unlink %s: %s\n", fpath, strerror(errno));
+    }
+    break;
+
+  case FTW_D:
+  case FTW_DP:
+    // directory or directory with children processed
+    dbg("Removing directory %s\n", fpath);
+    res = rmdir(fpath);
+    if (res < 0) {
+      fprintf(stderr, "Failed to rmdir %s: %s\n", fpath, strerror(errno));
+    }
+    break;
+
+  case FTW_DNR:
+  case FTW_NS:
+    // unreadable directory or unstatable file
+    // don't do anything here
+    dbg("Skipping %s - unreadable or unstatable\n", fpath);
+    res = 0;
+    break;
+  }
+  return res; // continue nftw traversal unless we have hit an error
+}
+
 // NOTE: in general we don't bother to free any of the dynamically allocated
 // memory since this is not a long-lived process so we don't care about memory
 // leaks as it will all get cleaned up when the process exits
 int main(int argc, char *argv[]) {
   int res;
+  int overwrite;
   struct stat st;
   const char *snap;
   const char *snap_arch;
   const char *snap_user_common;
   char *arch = NULL;
+  char *variant_path;
   char *gdk_cache_dir = NULL;
   char *gio_module_dir = NULL;
   char *gdk_pixbuf_module_file = NULL;
@@ -52,17 +107,23 @@ int main(int argc, char *argv[]) {
   char *gtk_query_immodules = NULL;
   const char *path = NULL;
 
+  if (getenv("SNAP_SETUP_ENV_DEBUG") != NULL) {
+    debug = 1;
+  }
+
   snap = getenv("SNAP");
   if (snap == NULL) {
     fprintf(stderr, "SNAP is not set\n");
     exit(1);
   }
+  dbg("Using SNAP %s\n", snap);
 
   snap_arch = getenv("SNAP_ARCH");
   if (snap_arch == NULL) {
     fprintf(stderr, "SNAP_ARCH is not set\n");
     exit(1);
   }
+  dbg("Using SNAP_ARCH %s\n", snap_arch);
 
   if (strcmp(snap_arch, "amd64") == 0) {
     asprintf(&arch, "x86_64-linux-gnu");
@@ -74,10 +135,86 @@ int main(int argc, char *argv[]) {
     asprintf(&arch, "%s-linux-gnu", snap_arch);
   }
 
+  dbg("Using architecture %s\n", arch);
+
   snap_user_common = getenv("SNAP_USER_COMMON");
   if (snap_user_common == NULL) {
     fprintf(stderr, "SNAP_USER_COMMON is not set\n");
     exit(1);
+  }
+
+  dbg("Using SNAP_USER_COMMON %s\n", snap_user_common);
+
+  asprintf(&variant_path, "%s/.emacs-variant", snap_user_common);
+  dbg("Using variant path %s\n", variant_path);
+  // read/write variant so we can check if we have changed variant and hence
+  // need to re-run everything
+  {
+    FILE *fp = fopen(variant_path, "r");
+    if (fp != NULL) {
+      // if we can open the variant file then we check if it matches what we
+      // expect
+      dbg("Reading variant from %s\n", variant_path);
+      char line[256];
+      if (fgets(line, sizeof(line), fp) != NULL) {
+        // remove trailing newline
+        if (line[strlen(line) - 1] == '\n') {
+          line[strlen(line) - 1] = '\0';
+        }
+        // check if the variant matches what we expect
+        if (strcmp(line, VARIANT) != 0) {
+          dbg("Variant '%s' does not match expected '%s'\n", line, VARIANT);
+          overwrite = 1;
+        } else {
+          dbg("Variant '%s' matches expected '%s'\n", line, VARIANT);
+          overwrite = 0;
+        }
+      } else {
+        dbg("Failed to read variant from %s: %s\n", variant_path,
+            strerror(errno));
+        overwrite = 1;
+      }
+      fclose(fp);
+    } else {
+      // if we can't open the variant file then we assume we are running the
+      // first time and hence need to write the variant
+      dbg("Writing variant '%s' to %s\n", VARIANT, variant_path);
+      fp = fopen(variant_path, "w");
+      if (fp == NULL) {
+        fprintf(stderr, "Failed to open %s for writing: %s\n", variant_path,
+                strerror(errno));
+        exit(1);
+      }
+      fprintf(fp, "%s\n", VARIANT);
+      fclose(fp);
+    }
+  }
+
+  overwrite = overwrite | !!getenv("SNAP_SETUP_ENV_OVERWRITE");
+
+  if (overwrite) {
+    dbg("Overwriting existing environment setup in %s\n", snap_user_common);
+    // remove and recreate SNAP_USER_COMMON entirely including all its contents
+    nftw(snap_user_common, nftw_unlink, 10, FTW_DEPTH | FTW_PHYS);
+    res =
+      mkdir(snap_user_common, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+    if (res < 0) {
+      fprintf(stderr, "Failed to create %s: %s\n", snap_user_common,
+              strerror(errno));
+      exit(1);
+    }
+    // write the variant file again
+    {
+      dbg("Writing variant '%s' to %s\n", VARIANT, variant_path);
+      FILE *fp = fopen(variant_path, "w");
+      if (fp == NULL) {
+        fprintf(stderr, "Failed to open %s for writing: %s\n", variant_path,
+                strerror(errno));
+        exit(1);
+      }
+      fprintf(fp, "%s\n", VARIANT);
+      fclose(fp);
+    }
   }
 
   asprintf(&gdk_cache_dir, "%s/.cache", snap_user_common);
@@ -99,6 +236,7 @@ int main(int argc, char *argv[]) {
   res = stat(gdk_pixbuf_query_loaders, &st);
 
   if (res == 0) {
+    dbg("Found gdk-pixbuf-query-loaders at %s\n", gdk_pixbuf_query_loaders);
     // execute gdk_pixbuf_query_loaders and redirect output to
     // gdk_pixbuf_module_file
     pid_t child = fork();
@@ -120,6 +258,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
         exit(1);
       }
+      dbg("Executing %s\n", gdk_pixbuf_query_loaders);
       res = execl(gdk_pixbuf_query_loaders, gdk_pixbuf_query_loaders, NULL);
       if (res < 0) {
         fprintf(stderr, "Failed to exec %s: %s\n", gdk_pixbuf_query_loaders,
@@ -282,6 +421,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
         exit(1);
       }
+      dbg("Executing %s with args:\n", gtk_query_immodules);
       res = execv(gtk_query_immodules, args);
       if (res < 0) {
         fprintf(stderr, "Failed to exec %s: %s\n", gtk_query_immodules,
@@ -293,6 +433,7 @@ int main(int argc, char *argv[]) {
     waitpid(child, NULL, 0);
   }
 
+    dbg("Setting GTK_IM_MODULE_FILE to %s\n", gtk_im_module_file);
     setenv("GTK_IM_MODULE_FILE", gtk_im_module_file, 1);
   }
 
@@ -304,6 +445,7 @@ int main(int argc, char *argv[]) {
   {
     char *gtk_path;
     asprintf(&gtk_path, "%s/usr/lib/%s/gtk-3.0", snap, arch);
+    dbg("Setting GTK_PATH to %s\n", gtk_path);
     setenv("GTK_PATH", gtk_path, 1);
   }
 
@@ -313,6 +455,7 @@ int main(int argc, char *argv[]) {
   if (path != NULL) {
     char *new_path;
     asprintf(&new_path, "%s:%s/usr/bin", path, snap);
+    dbg("Setting PATH to %s\n", new_path);
     setenv("PATH", new_path, 1);
   }
 
@@ -321,6 +464,7 @@ int main(int argc, char *argv[]) {
   {
     char *sysroot, *target, *linkpath;
     asprintf(&sysroot, "%s/sysroot", snap_user_common);
+    dbg("Creating sysroot %s\n", sysroot);
     res = mkdir(sysroot, S_IRUSR | S_IWUSR | S_IXUSR);
     if (res < 0 && errno != EEXIST) {
       fprintf(stderr, "Failed to create sysroot dir at %s: %s\n", sysroot,
@@ -386,10 +530,12 @@ int main(int argc, char *argv[]) {
                overrides[i].schema);
       schema_file = fopen(schema_path, "r");
       if (schema_file == NULL) {
+        dbg("Failed to open %s: %s\n", schema_path, strerror(errno));
         continue;
       }
       while (getline(&line, &len, schema_file) != -1) {
         if (strstr(line, overrides[i].key) != NULL) {
+          dbg("Found %s in %s\n", overrides[i].key, overrides[i].schema);
           overrides[i].present = 1;
           free(line);
           line = NULL;
@@ -412,6 +558,7 @@ int main(int argc, char *argv[]) {
       char *gsettings_schema_dir, *gschemas_compiled;
       struct stat host_st, snap_st;
 
+      dbg("Setting up GSETTINGS_SCHEMA_DIR for %d overrides\n", needed);
       asprintf(&gsettings_schema_dir, "%s/.cache/schemas", snap_user_common);
       mkdir(gsettings_schema_dir, 0700);
 
@@ -426,6 +573,7 @@ int main(int argc, char *argv[]) {
         DIR *dir;
         struct dirent *entry;
 
+        dbg("Compiling gsettings schemas from host\n");
         // remove any existing symlinks etc in the cache dir
         dir = opendir(gsettings_schema_dir);
         while ((entry = readdir(dir)) != NULL) {
@@ -451,6 +599,7 @@ int main(int argc, char *argv[]) {
             asprintf(&link_path, "%s/%s", gsettings_schema_dir, entry->d_name);
             unlink(link_path);
             // symlink so we don't have to copy the schemas
+            dbg("Linking %s to %s\n", target_path, link_path);
             res = symlink(target_path, link_path);
             if (res < 0) {
               fprintf(stderr, "Failed to symlink %s to %s: %s\n", target_path,
@@ -471,6 +620,7 @@ int main(int argc, char *argv[]) {
           asprintf(&link_path, "%s/%s", gsettings_schema_dir,
                    overrides[i].schema);
           unlink(link_path);
+          dbg("Linking %s to %s\n", target_path, link_path);
           res = symlink(target_path, link_path);
           if (res < 0) {
             fprintf(stderr, "Failed to symlink %s to %s: %s\n", target_path,
@@ -491,6 +641,8 @@ int main(int argc, char *argv[]) {
           char *glib_compile_schemas;
           asprintf(&glib_compile_schemas, "%s/usr/bin/glib-compile-schemas",
                    snap);
+          dbg("Executing %s with %s as schema dir\n", glib_compile_schemas,
+              gsettings_schema_dir);
           res = execl(glib_compile_schemas, glib_compile_schemas,
                       gsettings_schema_dir, NULL);
           if (res < 0) {
@@ -511,6 +663,7 @@ int main(int argc, char *argv[]) {
       }
 
       // set GSETTINGS_SCHEMA_DIR to the snap's cache dir
+      dbg("Setting GSETTINGS_SCHEMA_DIR to %s\n", gsettings_schema_dir);
       setenv("GSETTINGS_SCHEMA_DIR", gsettings_schema_dir, 1);
     }
   }
@@ -526,6 +679,7 @@ int main(int argc, char *argv[]) {
     xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
     if (xdg_runtime_dir) {
       asprintf(&gvfsd_dir, "%s/gvfsd", xdg_runtime_dir);
+      dbg("Creating gvfsd dir at %s\n", gvfsd_dir);
       res = mkdir(gvfsd_dir, S_IRUSR | S_IWUSR | S_IXUSR);
       if (res < 0 && errno != EEXIST) {
         fprintf(stderr, "Failed to create gvfsd dir at %s: %s\n", gvfsd_dir,
@@ -552,6 +706,7 @@ int main(int argc, char *argv[]) {
                 strlen("(complain)")) == 0) {
       // ignore errors here too
       fd = open("/proc/self/attr/current", O_WRONLY | O_APPEND);
+      dbg("Changing AppArmor profile to unconfined\n");
       write(fd, "changeprofile unconfined", strlen("changeprofile unconfined"));
       close(fd);
     }
@@ -559,6 +714,7 @@ int main(int argc, char *argv[]) {
 
   // finally exec argv if we have one
   if (argc > 1) {
+    dbg("Executing %s with args:\n", argv[1]);
     execv(argv[1], &argv[1]);
   }
 
