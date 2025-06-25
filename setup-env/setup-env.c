@@ -691,6 +691,14 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // set LIBGL_ALWAYS_SOFTWARE=1 to avoid trying to use host opengl libraries
+  // etc which may be incompatible with those shipped in the emacs snap for
+  // issues like https://github.com/alexmurray/emacs-snap/issues/107 - emacs is
+  // unlikely to benefit from opengl hardware rendering anyway so we can just
+  // use software rendering
+  dbg("Setting LIBGL_ALWAYS_SOFTWARE=1\n");
+  setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1);
+
   // finally break out of AppArmor confinement ignoring errors here since this
   // is best effort
   {
