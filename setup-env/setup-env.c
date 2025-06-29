@@ -20,10 +20,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "variant.h"
 
 #ifndef VARIANT
-// should be set by Makefile based on the git branch name
-#define VARIANT "unknown"
+#error "VARIANT should have been defined in variant.h"
 #endif
 
 static int debug = 0;
@@ -116,6 +116,8 @@ int main(int argc, char *argv[]) {
   if (getenv("SNAP_SETUP_ENV_DEBUG") != NULL) {
     debug = 1;
   }
+
+  dbg("Running setup-env for emacs snap variant %s\n", VARIANT);
 
   snap = getenv("SNAP");
   if (snap == NULL) {
@@ -689,6 +691,14 @@ int main(int argc, char *argv[]) {
                 strerror(errno));
       }
     }
+  }
+
+  // when using a non-pgtk variant of emacs, set LIBGL_ALWAYS_SOFTWARE to 1 to
+  // avoid possibly trying to use any native OpenGL libraries from the host
+  // which may not be compatible with the snap's version of GTK / X11 etc
+  if (strstr(VARIANT, "pgtk") == NULL) {
+    dbg("Setting LIBGL_ALWAYS_SOFTWARE to 1 for non-pgtk variant %s\n", VARIANT);
+    setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1);
   }
 
   // finally break out of AppArmor confinement ignoring errors here since this
