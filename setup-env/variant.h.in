@@ -1,0 +1,5 @@
+#pragma once
+
+#ifndef VARIANT
+#define VARIANT @VARIANT@
+#endif
