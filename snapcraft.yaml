@@ -36,7 +36,7 @@ apps:
     command: usr/bin/emacs
     desktop: usr/share/applications/emacs.desktop
   emacsclient:
-    command: usr/bin/emacsclient
+    command: emacsclient
     desktop: usr/share/applications/emacsclient.desktop
   ctags:
     command: usr/bin/ctags
@@ -356,3 +356,8 @@ parts:
       - enable-patchelf
     stage:
       - setup-env
+  emacsclient:
+    source: .
+    plugin: dump
+    stage:
+      - emacsclient
