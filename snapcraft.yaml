@@ -19,9 +19,9 @@ description: |
   snapcraft.yaml definition at https://github.com/alexmurray/emacs-snap to
   ensure source and build transparency.
 
-  The snap offers both the 'gtk' and 'pgtk' variants in separate snap tracks -
-  the 'latest' track offers the gtk variant whereas the 'pgtk' track offers the
-  pgtk variant of emacs.
+  The snap offers both the 'gtk', 'pgtk' and 'lucid' variants in separate snap
+  tracks - the 'latest' track offers the gtk variant whereas the 'pgtk' and
+  'lucid' tracks offer the pgtk and lucid variants of emacs respectively.
 
 base: core24
 grade: stable
@@ -98,6 +98,7 @@ parts:
       - libtiff-dev
       - libtool
       - libxi-dev
+      - libxaw7-dev
       - libxml2-dev
       - libxpm-dev
       - libxt-dev
@@ -255,6 +256,7 @@ parts:
       - libxau6
       - libxapian30
       - libxapian-dev # https://github.com/alexmurray/emacs-snap/issues/92
+      - libxaw7
       - libxcb-render0
       - libxcb-shm0
       - libxcb1
@@ -287,16 +289,15 @@ parts:
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
 
     override-build: |
-      # build without pgtk
+      # build with lucid
       env NOCONFIGURE=1 ./autogen.sh
       ./configure \
         --prefix=/snap/emacs/current/usr \
-        --with-x-toolkit=gtk3 \
-        --without-xaw3d \
+        --with-x-toolkit=lucid \
+        --with-toolkit-scroll-bars \
         --with-modules \
         --with-cairo \
         --with-native-compilation=aot \
-        --without-pgtk \
         --with-xinput2 \
         --with-tree-sitter
       env NATIVE_FULL_AOT=1 make -j"${SNAPCRAFT_PARALLEL_BUILD_COUNT}"
