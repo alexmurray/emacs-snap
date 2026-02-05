@@ -41,6 +41,11 @@
                        (concat "-B" sysroot "usr/lib/gcc/")))
       (add-to-list 'native-comp-driver-options opt t))))
 
+;; add the SNAP_COMMON/site-lisp directory to the load-path so that there is a
+;; writable location for site-lisp files
+(when-let ((snap-common (getenv "SNAP_COMMON")))
+  (add-to-list 'load-path
+               (concat (file-name-as-directory snap-common) "site-lisp/")))
 
 ;; now that we have accessed $SNAP we can unset it - and also unset *all* the
 ;; various SNAP environment variables so we don't confuse any other
@@ -64,7 +69,6 @@
                "SNAP_DATA"
                "SNAP_NAME"))
   (setenv env))
-
 
 (provide 'site-start)
 ;;; site-start.el ends here
