@@ -43,9 +43,14 @@
 
 ;; add the SNAP_COMMON/site-lisp directory to the load-path so that there is a
 ;; writable location for site-lisp files
-(when-let ((snap-common (getenv "SNAP_COMMON")))
-  (add-to-list 'load-path
-               (concat (file-name-as-directory snap-common) "site-lisp/")))
+(let* ((site-lisp (concat (file-name-as-directory (or (getenv "SNAP_COMMON") "/var/snap/emacs/common"))
+                          "site-lisp/"))
+       (site-start (concat site-lisp site-run-file)))
+  (add-to-list 'load-path site-lisp)
+  ;; also run any site-start.el files in there - this allows us to have a
+  ;; writable location for users to add site-start.el files to configure their
+  ;; snap installation
+  (load site-start t))
 
 ;; now that we have accessed $SNAP we can unset it - and also unset *all* the
 ;; various SNAP environment variables so we don't confuse any other
