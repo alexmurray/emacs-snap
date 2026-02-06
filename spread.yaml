@@ -68,6 +68,7 @@ environment:
   CHANNEL/pgtk_candidate: pgtk/candidate
   CHANNEL/pgtk_beta: pgtk/beta
   CHANNEL/pgtk_edge: pgtk/edge
+  CHANNEL/lucid_beta: lucid/beta
 
 suites:
   tests/:
