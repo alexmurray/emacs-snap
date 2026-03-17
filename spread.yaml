@@ -57,7 +57,6 @@ path: /spread/emacs-snap
 exclude:
   - .git
   - .github
-  - emacs*.snap
 
 # make sure we don't get killed during prepare
 kill-timeout: 30m
@@ -72,6 +71,7 @@ environment:
   CHANNEL/pgtk_beta: pgtk/beta
   CHANNEL/pgtk_edge: pgtk/edge
   CHANNEL/lucid_beta: lucid/beta
+  CHANNEL/local: local
 
 suites:
   tests/:
@@ -110,7 +110,12 @@ suites:
       esac
 
     prepare-each: |
-      snap install emacs --classic --channel $CHANNEL
+      snap install --edge core26
+      if [ $CHANNEL == local ]; then
+        snap install --classic --dangerous $SPREAD_PATH/emacs_*.snap
+      else
+        snap install --classic --channel $CHANNEL emacs
+      fi
 
     restore-each: |
       snap remove emacs
