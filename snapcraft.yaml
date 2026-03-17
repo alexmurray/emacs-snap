@@ -23,8 +23,9 @@ description: |
   the 'latest' track offers the gtk variant whereas the 'pgtk' track offers the
   pgtk variant of emacs.
 
-base: core24
-grade: stable
+base: core26
+build-base: devel
+grade: devel
 confinement: classic
 license: GPL-3.0+
 compression: lzo
@@ -72,12 +73,12 @@ parts:
       - debhelper
       - dpkg-dev
       - gawk
-      - gcc-14
-      - g++-14
+      - gcc-15
+      - g++-15
       - libacl1-dev
       - libasound2-dev
       - libdbus-1-dev
-      - libgccjit-14-dev
+      - libgccjit-15-dev
       - libgif-dev
       - libgnutls28-dev
       - libgpm-dev
@@ -108,8 +109,8 @@ parts:
       - zlib1g-dev
     stage-packages:
       - gsettings-desktop-schemas
-      - gcc-14 # for tree-sitter
-      - g++-14 # for tree-sitter
+      - gcc-15 # for tree-sitter
+      - g++-15 # for tree-sitter
       - gvfs
       - gvfs-libs
       - ibus-gtk3
@@ -142,16 +143,16 @@ parts:
       - libepoxy0
       - libexpat1
       - libffi8
-      - libflac12t64
+      - libflac14
       - libfontconfig1
       - libfreetype6
       - libgbm1
-      - libgccjit0
-      - libgccjit-14-dev
+      - libgccjit15
+      - libgccjit-15-dev
       - libgcc-s1
       - libgcrypt20
       - libgd3
-      - libgdk-pixbuf2.0-0
+      - libgdk-pixbuf-2.0-0
       - libgif7
       - libgl1
       - libglib2.0-0t64
@@ -182,7 +183,7 @@ parts:
       - libhyphen0
       - libibus-1.0-5
       - libice6
-      - libicu74
+      - libicu78
       - libisl23
       - libjbig0
       - libjpeg-turbo8
@@ -246,7 +247,7 @@ parts:
       - libwebpdecoder3
       - libwebpdemux2
       - libwoff1
-      - libxml2
+      - libxml2-16
       - libxpm4
       - libxslt1.1
       - libyajl2
@@ -274,14 +275,14 @@ parts:
     stage:
       - -usr/share/emacs/site-lisp
     build-environment:
-      - CC: "gcc-14"
-      - CXX: "g++-14"
+      - CC: "gcc-15"
+      - CXX: "g++-15"
       - CFLAGS: "${CFLAGS:+$CFLAGS} -O2"
       - NATIVE_FULL_AOT: "1"
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
-      # ensure we hard-code our copy of gcc-14 and g++14 for tree-sitter
+      # ensure we hard-code our copy of gcc-15 and g++15 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
