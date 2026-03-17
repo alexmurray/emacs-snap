@@ -16,6 +16,9 @@ backends:
       - ubuntu-24.04-64:
           username: ubuntu
           password: ubuntu
+      - ubuntu-26.04-64:
+          username: ubuntu
+          password: ubuntu
 
       # build an image as per
       # https://blog.strandboge.com/2019/04/16/cloud-images-qemu-cloud-init-and-snapd-spread-tests/
