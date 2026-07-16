@@ -24,8 +24,7 @@ description: |
   pgtk variant of emacs.
 
 base: core26
-build-base: devel
-grade: devel
+grade: stable
 confinement: classic
 license: GPL-3.0+
 compression: lzo
@@ -282,7 +281,7 @@ parts:
       - LD_LIBRARY_PATH: "$SNAPCRAFT_STAGE/usr/lib"
     override-pull: |
       craftctl default
-      # ensure we hard-code our copy of gcc-15 and g++15 for tree-sitter
+      # ensure we hard-code our copy of gcc-15 and g++-15 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch

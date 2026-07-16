@@ -110,7 +110,6 @@ suites:
       esac
 
     prepare-each: |
-      snap install --edge core26
       if [ $CHANNEL == local ]; then
         snap install --classic --dangerous $SPREAD_PATH/emacs_*.snap
       else
