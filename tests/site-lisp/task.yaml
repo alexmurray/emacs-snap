@@ -1,0 +1,24 @@
+summary: Test site-lisp functionality
+
+execute: |
+  # first test that it works without any site-start.el present
+  rm -rf /var/snap/emacs/common/site-lisp
+  emacs --batch --eval '(kill-emacs 0)'
+
+  # test site-lisp / site-start functionality
+  mkdir -p /var/snap/emacs/common/site-lisp
+  # site-start.el should get loaded automatically
+  echo '(shell-command-to-string "touch /tmp/test-site-start")' > /var/snap/emacs/common/site-lisp/site-start.el
+  # but not any other files
+  echo '(shell-command-to-string "touch /tmp/test-foo")' > /var/snap/emacs/common/site-lisp/foo.el
+  rm -f /tmp/test-site-start /tmp/test-foo
+
+  # check load-path contains the expected value
+  emacs --batch --eval '(if (member "/var/snap/emacs/common/site-lisp/" load-path) (kill-emacs 0) (progn (print load-path) (kill-emacs 1)))'
+
+  # and that site-start.el got loaded
+  test -f /tmp/test-site-start
+
+  # but foo.el did not
+  test ! -f /tmp/test-foo
+
