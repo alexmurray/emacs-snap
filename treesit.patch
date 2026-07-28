@@ -7,12 +7,12 @@ index 2518204ce93..7e6aef76bd1 100644
                      (expand-file-name "repo")))
           (source-dir (expand-file-name (or source-dir "src") workdir))
 -         (cc (or cc (seq-find #'executable-find '("cc" "gcc" "c99"))
-+         (cc (or cc (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin/gcc-14")
++         (cc (or cc (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin/gcc-15")
                   ;; If no C compiler found, just use cc and let
                   ;; `call-process' signal the error.
                   "cc"))
 -         (c++ (or c++ (seq-find #'executable-find '("c++" "g++"))
-+         (c++ (or c++ (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin/g++-14")
++         (c++ (or c++ (concat (file-name-as-directory (getenv "EMACS_SNAP_DIR")) "usr/bin/g++-15")
                    "c++"))
           (soext (or (car dynamic-library-suffixes)
                      (signal 'treesit-error '("Emacs cannot figure out the file extension for dynamic libraries for this system, because `dynamic-library-suffixes' is nil"))))
