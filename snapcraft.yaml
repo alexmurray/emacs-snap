@@ -49,7 +49,7 @@ parts:
     build-attributes:
       - enable-patchelf
     source: https://github.com/tree-sitter/tree-sitter.git
-    source-tag: v0.26.2
+    source-tag: v0.26.12
     build-environment:
       - PREFIX: "/usr"
   emacs:
@@ -280,7 +280,7 @@ parts:
     override-pull: |
       craftctl default
       craftctl set version=$(grep AC_INIT configure.ac | grep -o '[0-9.]\+' | head -n1)-$(git branch --show-current | sed 's|/|-|')-$(git log -n 1 --format=%h)
-      # ensure we hard-code our copy of gcc-14 and g++14 for tree-sitter
+      # ensure we hard-code our copy of gcc-15 and g++-15 for tree-sitter
       # otherwise it will use the system installed ones which will have a
       # different libc version and we will fail to load them
       patch -p1 < $SNAPCRAFT_PROJECT_DIR/treesit.patch
