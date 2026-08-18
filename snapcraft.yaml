@@ -1,6 +1,6 @@
 name: emacs
 title: GNU Emacs
-version: "30.2"
+version: "31.1-rc1"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -24,7 +24,7 @@ description: |
   'lucid' tracks offer the pgtk and lucid variants of emacs respectively.
 
 base: core26
-grade: stable
+grade: devel
 confinement: classic
 license: GPL-3.0+
 compression: lzo
@@ -38,8 +38,6 @@ apps:
   emacsclient:
     command: emacsclient
     desktop: usr/share/applications/emacsclient.desktop
-  ctags:
-    command: usr/bin/ctags
   ebrowse:
     command: usr/bin/ebrowse
   etags:
@@ -51,7 +49,7 @@ parts:
     build-attributes:
       - enable-patchelf
     source: https://github.com/tree-sitter/tree-sitter.git
-    source-tag: v0.25.8
+    source-tag: v0.26.12
     build-environment:
       - PREFIX: "/usr"
   emacs:
@@ -59,8 +57,8 @@ parts:
     plugin: nil
     build-attributes:
       - enable-patchelf
-    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-30.2.tar.xz
-    source-checksum: sha256/b3f36f18a6dd2715713370166257de2fae01f9d38cfe878ced9b1e6ded5befd9
+    source: https://alpha.gnu.org/gnu/emacs/pretest/emacs-31.1-rc1.tar.xz
+    source-checksum: sha256/370b2e5443091bbe71c0e7c02c3b80a7cded52cd72c99bb30540334f2ae4bcf9
     organize:
       snap/emacs/current/usr: usr
     build-packages:
