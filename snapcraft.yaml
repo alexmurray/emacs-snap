@@ -215,10 +215,12 @@ parts:
       - libpango-1.0-0
       - libpangocairo-1.0-0
       - libpangoft2-1.0-0
+      - libpcre2-8-0
       - libpixman-1-0
       - libpng16-16t64
       - libpulse0
       - librsvg2-2
+      - librsvg2-common # provides the gdk-pixbuf SVG loader module used for SVG icon themes
       - libsasl2-2
       - libsecret-1-0
       - libselinux1
