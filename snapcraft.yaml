@@ -1,6 +1,6 @@
 name: emacs
 title: GNU Emacs
-adopt-info: emacs
+version: "31.1"
 summary: GNU Emacs is the extensible self-documenting text editor
 description: |
   Emacs is the extensible, customizable, self-documenting real-time
@@ -57,8 +57,8 @@ parts:
     plugin: nil
     build-attributes:
       - enable-patchelf
-    source: https://github.com/emacs-mirror/emacs.git
-    source-depth: 1
+    source: https://mirrors.ocf.berkeley.edu/gnu/emacs/emacs-31.1.tar.xz
+    source-checksum: sha256/1da5790d9580c81932b5bf700633114468da7b3412d69faa767daebf974f4586
     organize:
       snap/emacs/current/usr: usr
     build-packages:
@@ -215,10 +215,12 @@ parts:
       - libpango-1.0-0
       - libpangocairo-1.0-0
       - libpangoft2-1.0-0
+      - libpcre2-8-0
       - libpixman-1-0
       - libpng16-16t64
       - libpulse0
       - librsvg2-2
+      - librsvg2-common # provides the gdk-pixbuf SVG loader module used for SVG icon themes
       - libsasl2-2
       - libsecret-1-0
       - libselinux1
