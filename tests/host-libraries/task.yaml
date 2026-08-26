@@ -1,0 +1,60 @@
+summary: Check the snap does not inadvertently load libraries from the host
+
+prepare: |
+  case $SPREAD_SYSTEM in
+    centos-*|rockylinux-*)
+      dnf install -y xorg-x11-server-Xvfb
+      ;;
+    ubuntu-*)
+      apt install -y xvfb
+      ;;
+  esac
+
+restore: |
+  pkill -x Xvfb 2>/dev/null || true
+  pkill -x emacs 2>/dev/null || true
+  rm -f /tmp/emacs-batch.log /tmp/emacs-gui.log /tmp/xvfb.log
+
+execute: |
+  # the /proc scan itself lives in check-no-host-libs.sh (alongside this
+  # task.yaml) so it can also be run locally, outside of spread - see that
+  # script for why we don't just drive classic-snap-analyzer.
+  CHECK=$SPREAD_PATH/tests/host-libraries/check-no-host-libs.sh
+
+  FAILED=0
+
+  # 1. -nw --batch: the non-windowed, non-interactive code path
+  emacs -nw --batch --eval '(sleep-for 5)' > /tmp/emacs-batch.log 2>&1 &
+  EMACS_PID=$!
+  sleep 2
+  if ! kill -0 $EMACS_PID 2>/dev/null; then
+    echo "emacs -nw --batch exited early:"
+    cat /tmp/emacs-batch.log
+    FAILED=1
+  else
+    "$CHECK" "-nw --batch" || FAILED=1
+  fi
+  wait $EMACS_PID 2>/dev/null || true
+
+  # 2. a real GUI frame, under a headless X server. Note: on the pgtk
+  # channel GTK will try a Wayland backend first and, with no Wayland
+  # compositor present, should fall back to X11 against this Xvfb - if
+  # that fallback ever stops working this step will fail loudly rather
+  # than silently skip.
+  Xvfb :99 -screen 0 1024x768x24 > /tmp/xvfb.log 2>&1 &
+  XVFB_PID=$!
+  sleep 1
+  DISPLAY=:99 emacs > /tmp/emacs-gui.log 2>&1 &
+  EMACS_PID=$!
+  sleep 3
+  if ! kill -0 $EMACS_PID 2>/dev/null; then
+    echo "GUI emacs exited early:"
+    cat /tmp/emacs-gui.log
+    FAILED=1
+  else
+    "$CHECK" "GUI frame" || FAILED=1
+  fi
+  kill $EMACS_PID 2>/dev/null || true
+  kill $XVFB_PID 2>/dev/null || true
+
+  [ $FAILED -eq 0 ]
