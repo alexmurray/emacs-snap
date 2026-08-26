@@ -7,6 +7,7 @@
 
 #define _GNU_SOURCE // for asprintf
 
+#include "variant.h"
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -20,7 +21,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "variant.h"
 
 #ifndef VARIANT
 #error "VARIANT should have been defined in variant.h"
@@ -103,6 +103,7 @@ int main(int argc, char *argv[]) {
   char *variant_path;
   char *gdk_cache_dir = NULL;
   char *gio_module_dir = NULL;
+  char *gconv_path = NULL;
   char *gdk_pixbuf_module_file = NULL;
   char *gdk_pixbuf_moduledir = NULL;
   char *gdk_pixbuf_query_loaders = NULL;
@@ -228,51 +229,183 @@ int main(int argc, char *argv[]) {
   asprintf(&gio_module_dir, "%s/usr/lib/%s/gio/modules", snap, arch);
   setenv("GIO_MODULE_DIR", gio_module_dir, 1);
 
-  asprintf(&gdk_pixbuf_module_file, "%s/gdk-pixbuf-loaders.cache",
-           gdk_cache_dir);
-  setenv("GDK_PIXBUF_MODULE_FILE", gdk_pixbuf_module_file, 1);
+  // glibc's gconv modules are bundled in the snap but glibc otherwise falls
+  // back to its compiled-in default of /usr/lib/<arch>/gconv, which resolves
+  // to the host's copy under classic confinement - point it at ours instead
+  asprintf(&gconv_path, "%s/usr/lib/%s/gconv", snap, arch);
+  setenv("GCONV_PATH", gconv_path, 1);
 
+  // glibc's locale data (collation, ctype etc) is looked up via
+  // LOCALE_ARCHIVE, which defaults to a hardcoded path that resolves to the
+  // host's copy under classic confinement. We can't reasonably bundle every
+  // locale glibc knows - the host's locale-archive alone is ~225MB - so
+  // instead generate just the locale(s) actually in use, on demand, from
+  // the locale source data we bundle via the "locales" stage-package
+  // (using localedef from the "libc-bin" stage-package) - this mirrors the
+  // GSETTINGS_SCHEMA_DIR handling below.
+  {
+    static const char *locale_vars[] = {
+      "LC_ALL",         "LANG",
+      "LC_CTYPE",       "LC_NUMERIC",
+      "LC_TIME",        "LC_COLLATE",
+      "LC_MONETARY",    "LC_MESSAGES",
+      "LC_PAPER",       "LC_NAME",
+      "LC_ADDRESS",     "LC_TELEPHONE",
+      "LC_MEASUREMENT", "LC_IDENTIFICATION",
+    };
+    char *seen[sizeof(locale_vars) / sizeof(locale_vars[0])] = {0};
+    int nseen = 0;
+    char *locale_dir;
+    int i;
+    int any = 0;
+
+    asprintf(&locale_dir, "%s/.cache/locale", snap_user_common);
+    mkdir(locale_dir, 0700);
+
+    for (i = 0; i < sizeof(locale_vars) / sizeof(locale_vars[0]); i++) {
+      const char *value = getenv(locale_vars[i]);
+      const char *dot;
+      char *language, *charmap, *at, *locale_path;
+      struct stat locale_st;
+      int j, is_dup = 0;
+
+      if (value == NULL || *value == '\0' || strcmp(value, "C") == 0 ||
+          strcmp(value, "POSIX") == 0) {
+        continue;
+      }
+
+      for (j = 0; j < nseen; j++) {
+        if (strcmp(seen[j], value) == 0) {
+          is_dup = 1;
+          break;
+        }
+      }
+      if (is_dup) {
+        continue;
+      }
+      seen[nseen++] = strdup(value);
+
+      // we need a charmap (e.g. the "UTF-8" in "en_AU.UTF-8") to pass to
+      // localedef - without one we can't reliably generate the locale so
+      // just leave this one to fall through to the host
+      dot = strchr(value, '.');
+      if (dot == NULL) {
+        dbg("Locale '%s' has no charmap suffix - skipping locale generation\n",
+            value);
+        continue;
+      }
+      language = strndup(value, dot - value);
+      charmap = strdup(dot + 1);
+      at = strchr(charmap, '@');
+      if (at != NULL) {
+        *at = '\0';
+      }
+
+      asprintf(&locale_path, "%s/%s", locale_dir, value);
+      if (overwrite || stat(locale_path, &locale_st) != 0) {
+        char *localedef;
+        pid_t child;
+
+        asprintf(&localedef, "%s/usr/bin/localedef", snap);
+        dbg("Generating locale %s (language=%s, charmap=%s) into %s\n", value,
+            language, charmap, locale_path);
+        child = fork();
+        if (child == -1) {
+          fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+          exit(1);
+        }
+        if (child == 0) {
+          res = execl(localedef, localedef, "-i", language, "-f", charmap,
+                      locale_path, NULL);
+          if (res < 0) {
+            fprintf(stderr, "Failed to exec %s: %s\n", localedef,
+                    strerror(errno));
+            exit(1);
+          }
+        }
+        waitpid(child, NULL, 0);
+      }
+
+      if (stat(locale_path, &locale_st) == 0) {
+        any = 1;
+      } else {
+        dbg("Failed to generate locale %s - leaving it to fall through to "
+            "the host\n",
+            value);
+      }
+      free(language);
+      free(charmap);
+    }
+
+    if (any) {
+      dbg("Setting LOCPATH to %s\n", locale_dir);
+      setenv("LOCPATH", locale_dir, 1);
+    }
+  }
+
+  // modern gdk-pixbuf (2.42+) compiles loaders for common formats (png,
+  // jpeg, gif etc) directly into libgdk-pixbuf-2.0 itself and no longer
+  // ships them as external modules under a versioned loaders/ directory -
+  // only bother with GDK_PIXBUF_MODULEDIR/MODULE_FILE if that directory
+  // actually exists here, otherwise leave both unset so gdk-pixbuf falls
+  // back to its builtin loaders. Forcing GDK_PIXBUF_MODULE_FILE at an
+  // empty/stale cache would otherwise disable that builtin fallback
+  // entirely and break all image loading, including GTK's own icons.
   asprintf(&gdk_pixbuf_moduledir, "%s/usr/lib/%s/gdk-pixbuf-2.0/2.10.0/loaders",
            snap, arch);
-  setenv("GDK_PIXBUF_MODULEDIR", gdk_pixbuf_moduledir, 1);
+  res = stat(gdk_pixbuf_moduledir, &st);
 
-  asprintf(&gdk_pixbuf_query_loaders,
-           "%s/usr/lib/%s/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders", snap, arch);
-  res = stat(gdk_pixbuf_query_loaders, &st);
+  if (res != 0) {
+    dbg("No gdk-pixbuf loaders directory at %s - leaving GDK_PIXBUF_MODULEDIR "
+        "and GDK_PIXBUF_MODULE_FILE unset\n",
+        gdk_pixbuf_moduledir);
+  } else {
+    setenv("GDK_PIXBUF_MODULEDIR", gdk_pixbuf_moduledir, 1);
 
-  if (res == 0) {
-    dbg("Found gdk-pixbuf-query-loaders at %s\n", gdk_pixbuf_query_loaders);
-    // execute gdk_pixbuf_query_loaders and redirect output to
-    // gdk_pixbuf_module_file
-    pid_t child = fork();
-    if (child == -1) {
-      fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
-      exit(1);
+    asprintf(&gdk_pixbuf_module_file, "%s/gdk-pixbuf-loaders.cache",
+             gdk_cache_dir);
+    setenv("GDK_PIXBUF_MODULE_FILE", gdk_pixbuf_module_file, 1);
+
+    asprintf(&gdk_pixbuf_query_loaders,
+             "%s/usr/lib/%s/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders", snap,
+             arch);
+    res = stat(gdk_pixbuf_query_loaders, &st);
+
+    if (res == 0) {
+      dbg("Found gdk-pixbuf-query-loaders at %s\n", gdk_pixbuf_query_loaders);
+      // execute gdk_pixbuf_query_loaders and redirect output to
+      // gdk_pixbuf_module_file
+      pid_t child = fork();
+      if (child == -1) {
+        fprintf(stderr, "Failed to fork: %s\n", strerror(errno));
+        exit(1);
+      }
+      if (child == 0) {
+        // we are the child - redirect our output to gdk_pixbuf_module_file
+        // and exec gdk_pixbuf_query_loaders
+        int fd =
+          open(gdk_pixbuf_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
+        if (fd < 0) {
+          fprintf(stderr, "Failed to open %s: %s\n", gdk_pixbuf_module_file,
+                  strerror(errno));
+          exit(1);
+        }
+        res = dup2(fd, 1);
+        if (res < 0) {
+          fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
+          exit(1);
+        }
+        dbg("Executing %s\n", gdk_pixbuf_query_loaders);
+        res = execl(gdk_pixbuf_query_loaders, gdk_pixbuf_query_loaders, NULL);
+        if (res < 0) {
+          fprintf(stderr, "Failed to exec %s: %s\n", gdk_pixbuf_query_loaders,
+                  strerror(errno));
+          exit(1);
+        }
+      }
+      // wait for child to execute
+      waitpid(child, NULL, 0);
     }
-    if (child == 0) {
-      // we are the child - redirect our output to gdk_pixbuf_module_file and
-      // exec gdk_pixbuf_query_loaders
-      int fd = open(gdk_pixbuf_module_file, O_CREAT | O_TRUNC | O_WRONLY, 0644);
-      if (fd < 0) {
-        fprintf(stderr, "Failed to open %s: %s\n", gdk_pixbuf_module_file,
-                strerror(errno));
-        exit(1);
-      }
-      res = dup2(fd, 1);
-      if (res < 0) {
-        fprintf(stderr, "Failed to dup2: %s\n", strerror(errno));
-        exit(1);
-      }
-      dbg("Executing %s\n", gdk_pixbuf_query_loaders);
-      res = execl(gdk_pixbuf_query_loaders, gdk_pixbuf_query_loaders, NULL);
-      if (res < 0) {
-        fprintf(stderr, "Failed to exec %s: %s\n", gdk_pixbuf_query_loaders,
-                strerror(errno));
-        exit(1);
-      }
-    }
-    // wait for child to execute
-    waitpid(child, NULL, 0);
   }
 
   asprintf(&fontconfig_cache_dir, "%s/.cache/fontconfig", snap_user_common);
@@ -697,7 +830,8 @@ int main(int argc, char *argv[]) {
   // avoid possibly trying to use any native OpenGL libraries from the host
   // which may not be compatible with the snap's version of GTK / X11 etc
   if (strstr(VARIANT, "pgtk") == NULL) {
-    dbg("Setting LIBGL_ALWAYS_SOFTWARE to 1 for non-pgtk variant %s\n", VARIANT);
+    dbg("Setting LIBGL_ALWAYS_SOFTWARE to 1 for non-pgtk variant %s\n",
+        VARIANT);
     setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1);
   }
 

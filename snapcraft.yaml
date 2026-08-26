@@ -124,11 +124,19 @@ parts:
       - libbsd0
       - libc6 # required for native-comp
       - libc6-dev # required for native-comp
+      - libc-bin # provides localedef, used to generate locale data at runtime
+      - locales # locale source data used by localedef to generate locale data at runtime
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0t64
       - libcanberra-gtk3-module  # to avoid startup error: Failed to load module "canberra-gtk-module"
-      - libcanberra-pulse
+      # NOTE: deliberately not staging libcanberra-pulse (or any other
+      # libcanberra-* backend) - libcanberra dlopens its backend plugins via
+      # a hardcoded absolute host path baked into libcanberra0 at
+      # package-build time (/usr/lib/<arch>/libcanberra-0.30/libcanberra-%s)
+      # which RPATH/LD_LIBRARY_PATH cannot redirect, so bundling our own
+      # copy here can never actually be used - it would just be dead
+      # weight. The audio bell relies on the host having this instead.
       - libcanberra0t64
       - libdatrie1
       - libdb5.3t64
