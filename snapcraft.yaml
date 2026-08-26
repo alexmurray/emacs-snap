@@ -74,6 +74,7 @@ parts:
     source: https://gitlab.gnome.org/GNOME/gdk-pixbuf.git
     source-tag: "2.44.5" # the same version as in ubuntu 26.04
     build-packages:
+      - gcc-15 # plugin: nil injects no compiler of its own, unlike plugin: make
       - meson
       - ninja-build
       - pkg-config
@@ -82,7 +83,26 @@ parts:
       - libpng-dev
       - libtiff-dev
       - zlib1g-dev
+    build-environment:
+      - CC: "gcc-15"
     override-build: |
+      # -Dothers=enabled is required because upstream gates the
+      # dependency-free formats (xpm, bmp, ico, ani, pnm, tga, icns, qtif)
+      # behind this separate "weakly maintained loaders" option, defaulted
+      # to disabled - without it, -Dbuiltin_loaders=all still silently
+      # omits xpm entirely, breaking GTK's own internal fallback icon
+      # lookups (gdk_pixbuf_new_from_xpm_data).
+      #
+      # -Dgio_sniffing=false is required because with it enabled, format
+      # detection for loaders without an explicit type goes through GIO's
+      # g_content_type_guess(), which depends on the mime.cache under
+      # /usr/share/mime - since we run under classic confinement, that
+      # path resolves to whatever the ambient host provides, which is
+      # inconsistent/absent on minimal images (observed breaking all image
+      # loading, including GTK's own resource icons, specifically on
+      # Ubuntu 24.04/26.04 hosts but not 18.04/20.04). Disabling it makes
+      # format detection use gdk-pixbuf's own self-contained magic-byte
+      # sniffing instead, independent of the host.
       meson setup build \
         --prefix=/usr \
         --buildtype=release \
@@ -92,6 +112,8 @@ parts:
         -Dgif=enabled \
         -Dglycin=disabled \
         -Dbuiltin_loaders=all \
+        -Dothers=enabled \
+        -Dgio_sniffing=false \
         -Dintrospection=disabled \
         -Ddocumentation=false \
         -Dman=false \
@@ -410,7 +432,16 @@ parts:
       # https://github.com/alexmurray/emacs-snap/issues/96 and use our
       # libc_nonshared.a - note that as of core26 (glibc's usr-merge) the
       # generated script references libc.so.6 via /usr/lib/... rather than
-      # the older /lib/... prefix used on earlier bases
+      # the older /lib/... prefix used on earlier bases.
+      #
+      # NOTE: this has to stay in override-stage, not override-prime - craftctl
+      # default inside a custom override-prime skips the classic-confinement
+      # ELF/RPATH patching pass entirely due to
+      # https://github.com/canonical/craft-parts/issues/1122. Keeping this in
+      # override-stage means it does corrupt $SNAPCRAFT_STAGE's shared copy of
+      # libc.so for the rest of this build, which can break a later *iterative*
+      # rebuild of an earlier-ordered part (e.g. gdk-pixbuf) that still needs to
+      # link against libc via stage
       sed -i "s| /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc\.so\.6| libc.so.6|" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
       sed -i "s| /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a| /snap/emacs/current/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a|" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
       echo 'SEARCH_DIR( /usr/lib/x86_64-linux-gnu )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
