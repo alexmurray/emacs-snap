@@ -33,12 +33,19 @@
 
 ;; ensure the correct native-comp-driver-options are set -- we also patch
 ;; comp.el in when building the emacs snap but do it here too to try and
-;; ensure this is always set no matter what
+;; ensure this is always set no matter what. Note we need -Busr/bin/ as well
+;; as -Busr/lib/gcc/ since without a -B hint pointing at a directory
+;; containing a linker, libgccjit's internal driver falls through to gcc's
+;; hard-coded absolute DEFAULT_LINKER fallback (/usr/bin/ld on Debian/Ubuntu)
+;; which, being an absolute path, bypasses --sysroot entirely and so under
+;; classic confinement resolves to the host's own (possibly much older, e.g.
+;; on Ubuntu 18.04) linker instead of the one bundled in the snap.
 (when (require 'comp nil t)
   (let ((sysroot (concat (file-name-as-directory (getenv "EMACS_SNAP_USER_COMMON"))
                          "sysroot/")))
     (dolist (opt (list (concat "--sysroot=" sysroot)
-                       (concat "-B" sysroot "usr/lib/gcc/")))
+                       (concat "-B" sysroot "usr/lib/gcc/")
+                       (concat "-B" sysroot "usr/bin/")))
       (add-to-list 'native-comp-driver-options opt t))))
 
 ;; add the SNAP_COMMON/site-lisp directory to the load-path so that there is a
