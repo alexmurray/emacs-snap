@@ -408,10 +408,12 @@ parts:
       # finally fixup linker script to use relative path for libc.so.6 and add
       # multiple search paths to it to fix
       # https://github.com/alexmurray/emacs-snap/issues/96 and use our
-      # libc_nonshared.a
-      sed -i "s| /lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/| |" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+      # libc_nonshared.a - note that as of core26 (glibc's usr-merge) the
+      # generated script references libc.so.6 via /usr/lib/... rather than
+      # the older /lib/... prefix used on earlier bases
+      sed -i "s| /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc\.so\.6| libc.so.6|" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
       sed -i "s| /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a| /snap/emacs/current/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc_nonshared.a|" usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
-      echo 'SEARCH_DIR( /lib/x86_64-linux-gnu )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
+      echo 'SEARCH_DIR( /usr/lib/x86_64-linux-gnu )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
       echo 'SEARCH_DIR( /lib64/ )' >> usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libc.so
 
   site-lisp:
