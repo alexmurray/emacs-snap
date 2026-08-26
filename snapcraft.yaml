@@ -52,8 +52,56 @@ parts:
     source-tag: v0.26.12
     build-environment:
       - PREFIX: "/usr"
+  gdk-pixbuf:
+    # Ubuntu's own libgdk-pixbuf-2.0-0 (2.44+ as used in our base core26)
+    # dropped its builtin/module loaders for raster formats (PNG, JPEG, GIF,
+    # TIFF) in favour of delegating to "glycin" - a set of loader helper
+    # binaries invoked via an absolute host path
+    # (/usr/libexec/glycin-loaders/...) baked into their .conf files at
+    # package-build time, which classic confinement cannot redirect into the
+    # snap (same class of problem as the libcanberra note below). That leaves
+    # the distro package with no working image loaders at all unless the host
+    # happens to have glycin-loaders installed (which is only a relatively
+    # recent package - ie is not even available in Ubuntu 24.04), which breaks
+    # basic GTK icon rendering (the GUI aborts on startup trying to load its own
+    # toolbar/menu icons resulting in the crash reported in
+    # https://github.com/alexmurray/emacs-snap/issues/116). So we build our own
+    # gdk-pixbuf instead, with glycin disabled and the classic loaders compiled
+    # directly into the library, to be fully self-contained again.
+    plugin: nil
+    build-attributes:
+      - enable-patchelf
+    source: https://gitlab.gnome.org/GNOME/gdk-pixbuf.git
+    source-tag: "2.44.5" # the same version as in ubuntu 26.04
+    build-packages:
+      - meson
+      - ninja-build
+      - pkg-config
+      - libglib2.0-dev
+      - libjpeg-dev
+      - libpng-dev
+      - libtiff-dev
+      - zlib1g-dev
+    override-build: |
+      meson setup build \
+        --prefix=/usr \
+        --buildtype=release \
+        -Dpng=enabled \
+        -Djpeg=enabled \
+        -Dtiff=enabled \
+        -Dgif=enabled \
+        -Dglycin=disabled \
+        -Dbuiltin_loaders=all \
+        -Dintrospection=disabled \
+        -Ddocumentation=false \
+        -Dman=false \
+        -Dtests=false \
+        -Dinstalled_tests=false \
+        -Dthumbnailer=disabled
+      ninja -C build
+      DESTDIR="${SNAPCRAFT_PART_INSTALL}" ninja -C build install
   emacs:
-    after: [tree-sitter]
+    after: [tree-sitter, gdk-pixbuf]
     plugin: nil
     build-attributes:
       - enable-patchelf
@@ -125,11 +173,19 @@ parts:
       - libbsd0
       - libc6 # required for native-comp
       - libc6-dev # required for native-comp
+      - libc-bin # provides localedef, used to generate locale data at runtime
+      - locales # locale source data used by localedef to generate locale data at runtime
       - libcairo-gobject2
       - libcairo2
       - libcanberra-gtk3-0t64
       - libcanberra-gtk3-module  # to avoid startup error: Failed to load module "canberra-gtk-module"
-      - libcanberra-pulse
+      # NOTE: deliberately not staging libcanberra-pulse (or any other
+      # libcanberra-* backend) - libcanberra dlopens its backend plugins via
+      # a hardcoded absolute host path baked into libcanberra0 at
+      # package-build time (/usr/lib/<arch>/libcanberra-0.30/libcanberra-%s)
+      # which RPATH/LD_LIBRARY_PATH cannot redirect, so bundling our own
+      # copy here can never actually be used - it would just be dead
+      # weight. The audio bell relies on the host having this instead.
       - libcanberra0t64
       - libdatrie1
       - libdb5.3t64
@@ -150,7 +206,6 @@ parts:
       - libgcc-s1
       - libgcrypt20
       - libgd3
-      - libgdk-pixbuf-2.0-0
       - libgif7
       - libgl1
       - libglib2.0-0t64
@@ -275,6 +330,21 @@ parts:
       - zlib1g
     stage:
       - -usr/share/emacs/site-lisp
+      # libgdk-pixbuf-2.0-0 and gdk-pixbuf-query-loaders still get pulled in
+      # transitively (e.g. via librsvg2-common's Depends) even though we no
+      # longer list libgdk-pixbuf-2.0-0 explicitly above - exclude them so
+      # our own gdk-pixbuf part's build (see above) is what actually gets
+      # staged at these paths.
+      - -usr/lib/*/libgdk_pixbuf-2.0.so*
+      - -usr/lib/*/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
+      # and drop the now-unused glycin loader helpers/config that come
+      # along with it - our gdk-pixbuf build never calls into these (see
+      # the -Dglycin=disabled comment above) so they're just dead weight
+      - -usr/lib/*/libglycin-2.so*
+      - -usr/libexec/glycin-loaders
+      - -usr/share/glycin-loaders
+      - -usr/share/thumbnailers/glycin-*.thumbnailer
+      - -usr/bin/glycin-thumbnailer
     build-environment:
       - CC: "gcc-15"
       - CXX: "g++-15"
