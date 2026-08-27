@@ -1,0 +1,104 @@
+summary: Check the pgtk variant works against a real (headless) Wayland compositor
+
+prepare: |
+  # same font-starvation rationale as tests/host-libraries: these are minimal
+  # cloud images with no fonts at all, which isn't representative of a real
+  # desktop.
+  #
+  # weston is confirmed packaged for all the ubuntu-* systems here, but not
+  # confirmed available for the centos-*/rockylinux-* (EL8) family - EPEL only
+  # clearly carries it from EPEL 9 onward. Rather than guess, try the install
+  # and let execute skip cleanly if the binary isn't there.
+  case $SPREAD_SYSTEM in
+    centos-*|rockylinux-*)
+      dnf install -y dejavu-sans-fonts
+      dnf install -y weston || true
+      ;;
+    ubuntu-*)
+      apt install -y fonts-dejavu-core
+      apt install -y weston || true
+      ;;
+  esac
+
+restore: |
+  pkill -x weston 2>/dev/null || true
+  pkill -x emacs 2>/dev/null || true
+  rm -f /tmp/emacs-wayland.log /tmp/weston.log
+  rm -rf /tmp/xdg-runtime-wayland-test
+
+execute: |
+  CHECK=$SPREAD_PATH/tests/host-libraries/check-no-host-libs.sh
+
+  # only the pgtk variant has a native Wayland path - detect this from the
+  # binary itself (not from $CHANNEL) so this test doesn't need to know which
+  # channel/track it's running against.
+  PGTK=$(emacs --batch --eval '(princ (featurep (quote pgtk)))')
+  if [ "$PGTK" != t ]; then
+    echo "not a pgtk build (featurep pgtk => $PGTK), skipping native Wayland check"
+    exit 0
+  fi
+
+  if ! command -v weston > /dev/null; then
+    echo "no weston binary available on $SPREAD_SYSTEM, skipping native Wayland check"
+    exit 0
+  fi
+
+  FAILED=0
+
+  export XDG_RUNTIME_DIR=/tmp/xdg-runtime-wayland-test
+  mkdir -m 0700 -p "$XDG_RUNTIME_DIR"
+
+  weston --backend=headless-backend.so --socket=wayland-test > /tmp/weston.log 2>&1 &
+  WESTON_PID=$!
+  sleep 2
+  if ! kill -0 $WESTON_PID 2>/dev/null; then
+    echo "weston exited early:"
+    cat /tmp/weston.log
+    exit 1
+  fi
+  if [ ! -S "$XDG_RUNTIME_DIR/wayland-test" ]; then
+    echo "weston did not create a wayland-test socket:"
+    cat /tmp/weston.log
+    kill $WESTON_PID 2>/dev/null || true
+    exit 1
+  fi
+
+  # DISPLAY is deliberately left unset and GDK_BACKEND pinned to wayland so a
+  # broken native backend fails loudly instead of quietly falling back to X11.
+  env -u DISPLAY WAYLAND_DISPLAY=wayland-test GDK_BACKEND=wayland \
+    emacs --eval '(server-start)' > /tmp/emacs-wayland.log 2>&1 &
+  EMACS_PID=$!
+  sleep 3
+  if ! kill -0 $EMACS_PID 2>/dev/null; then
+    echo "Wayland emacs exited early:"
+    cat /tmp/emacs-wayland.log
+    FAILED=1
+  else
+    WINDOW_SYSTEM=$(emacs.emacsclient --eval '(frame-parameter nil (quote window-system))' 2>&1)
+    if [ "$WINDOW_SYSTEM" != pgtk ]; then
+      echo "expected a native pgtk frame, got: $WINDOW_SYSTEM"
+      FAILED=1
+    fi
+
+    "$CHECK" "Wayland GUI frame" || FAILED=1
+
+    # weston's headless-backend deliberately never registers a wl_seat (there's
+    # no real input hardware for it to back one with - this is intentional
+    # upstream behaviour, not a bug), so GDK's default-seat lookup harmlessly
+    # fails on every input-related tick under this compositor specifically.
+    # Excluded the same way check-no-host-libs.sh excludes the unavoidable
+    # libcanberra host path - a property of the headless test compositor, not
+    # something our packaging can or should fix.
+    if grep -vE "gdk_seat_get_keyboard: assertion 'GDK_IS_SEAT \(seat\)' failed" /tmp/emacs-wayland.log \
+        | grep -qE '\): (Gtk|Gdk|GdkPixbuf)-(WARNING|CRITICAL|ERROR) \*\*:'; then
+      echo "Wayland frame: unexpected Gtk/Gdk warnings:"
+      grep -vE "gdk_seat_get_keyboard: assertion 'GDK_IS_SEAT \(seat\)' failed" /tmp/emacs-wayland.log \
+        | grep -E '\): (Gtk|Gdk|GdkPixbuf)-(WARNING|CRITICAL|ERROR) \*\*:'
+      FAILED=1
+    fi
+  fi
+
+  kill $EMACS_PID 2>/dev/null || true
+  kill $WESTON_PID 2>/dev/null || true
+
+  [ $FAILED -eq 0 ]
