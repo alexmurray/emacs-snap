@@ -35,13 +35,24 @@ trap 'rm -f "$errfile" "$errfile.real"' EXIT
 
 for p in /proc/[0-9]*; do
   pid=${p#/proc/}
+  # [ -r ] is only a fast-path skip: it can pass (same UID, mode bits allow
+  # it) while the actual read is still denied by e.g. Yama ptrace_scope, so
+  # the real open() attempt below must have its own stderr suppressed too -
+  # piping through cat rather than a direct `<` redirect ensures the EACCES
+  # happens inside a redirected subprocess instead of failing the shell's own
+  # redirection setup (which a trailing 2>/dev/null can't catch).
   [ -r "$p/environ" ] || continue
-  tr '\0' '\n' < "$p/environ" 2>/dev/null | grep -q '^SNAP_NAME=emacs$' || continue
+  cat "$p/environ" 2>/dev/null | tr '\0' '\n' | grep -q '^SNAP_NAME=emacs$' || continue
   case "$(readlink "$p/exe" 2>/dev/null)" in
     /snap/emacs/*) ;;
     *) continue ;;
   esac
-  grep -E '/lib|/usr/lib' "$p/maps" 2>/dev/null | awk '{ print $6 }'
+  # require an actual shared-object filename (.so or .so.N.N...), not just a
+  # '/lib' substring anywhere in the path - that loose match also fires on
+  # unrelated files that happen to contain it, e.g. fonts under a
+  # "liberation" directory, gettext catalogs named after the "libc" domain
+  # (.../LC_MESSAGES/libc.mo), or dictionary data under /var/lib/aspell/.
+  awk '{ if ($6 != "") print $6 }' "$p/maps" 2>/dev/null | grep -E '\.so(\.[0-9]+)*$'
 done | grep -v -E "^/snap/(core[0-9]*|emacs)/" | sort -u >> "$errfile"
 
 # libcanberra dlopens its sound backend plugins via a hardcoded absolute

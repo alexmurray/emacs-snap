@@ -27,7 +27,7 @@ restore: |
   rm -rf /tmp/xdg-runtime-wayland-test
 
 execute: |
-  CHECK=$SPREAD_PATH/tests/host-libraries/check-no-host-libs.sh
+  CHECK=$SPREAD_PATH/tests/common/check-no-host-libs.sh
 
   # only the pgtk variant has a native Wayland path - detect this from the
   # binary itself (not from $CHANNEL) so this test doesn't need to know which
