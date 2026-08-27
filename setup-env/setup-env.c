@@ -366,9 +366,12 @@ int main(int argc, char *argv[]) {
              gdk_cache_dir);
     setenv("GDK_PIXBUF_MODULE_FILE", gdk_pixbuf_module_file, 1);
 
-    asprintf(&gdk_pixbuf_query_loaders,
-             "%s/usr/lib/%s/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders", snap,
-             arch);
+    // note: this is usr/bin, not usr/lib/<arch>/gdk-pixbuf-2.0/ - unlike
+    // Debian/Ubuntu's own gdk-pixbuf packaging (which relocates it there),
+    // our own from-source gdk-pixbuf part (see the gdk-pixbuf part in
+    // snapcraft.yaml) installs it at upstream's default bindir
+    asprintf(&gdk_pixbuf_query_loaders, "%s/usr/bin/gdk-pixbuf-query-loaders",
+             snap);
     res = stat(gdk_pixbuf_query_loaders, &st);
 
     if (res == 0) {
