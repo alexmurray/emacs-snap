@@ -26,10 +26,10 @@ restore: |
   rm -f /tmp/emacs-batch.log /tmp/emacs-gui.log /tmp/xvfb.log
 
 execute: |
-  # the /proc scan itself lives in check-no-host-libs.sh (alongside this
-  # task.yaml) so it can also be run locally, outside of spread - see that
-  # script for why we don't just drive classic-snap-analyzer.
-  CHECK=$SPREAD_PATH/tests/host-libraries/check-no-host-libs.sh
+  # the /proc scan itself lives in tests/common/check-no-host-libs.sh (shared
+  # with tests/wayland) so it can also be run locally, outside of spread -
+  # see that script for why we don't just drive classic-snap-analyzer.
+  CHECK=$SPREAD_PATH/tests/common/check-no-host-libs.sh
 
   FAILED=0
 
