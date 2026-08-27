@@ -24,7 +24,7 @@ description: |
   'lucid' tracks offer the pgtk and lucid variants of emacs respectively.
 
 base: core26
-grade: devel
+grade: stable
 confinement: classic
 license: GPL-3.0+
 compression: lzo
