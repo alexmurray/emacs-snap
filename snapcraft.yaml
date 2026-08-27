@@ -68,6 +68,14 @@ parts:
     # https://github.com/alexmurray/emacs-snap/issues/116). So we build our own
     # gdk-pixbuf instead, with glycin disabled and the classic loaders compiled
     # directly into the library, to be fully self-contained again.
+    #
+    # NOTE: building from source here means gdk-pixbuf-query-loaders installs
+    # to upstream's default bindir (usr/bin) rather than the
+    # usr/lib/<arch>/gdk-pixbuf-2.0/ location Debian/Ubuntu's own gdk-pixbuf
+    # package patches it to - setup-env.c's GDK_PIXBUF_MODULEDIR handling
+    # looks for it at usr/bin accordingly. If this part is ever dropped in
+    # favour of the distro package again, that lookup path in setup-env.c
+    # needs to move back too.
     plugin: nil
     build-attributes:
       - enable-patchelf

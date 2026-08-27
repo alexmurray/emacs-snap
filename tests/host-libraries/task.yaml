@@ -1,12 +1,22 @@
 summary: Check the snap does not inadvertently load libraries from the host
 
 prepare: |
+  # a real desktop always has some baseline fonts installed (GNOME/KDE etc
+  # pull them in as dependencies), but these are minimal cloud images with
+  # none at all - with no font for GTK/Pango to fall back to, we saw emacs
+  # abort outright with "No suitable font was found", and in-between states
+  # (e.g. only a colour/emoji font, no plain text font) are a known trigger
+  # for Pango miscalculating a text layout size, which GDK then refuses to
+  # allocate as a native window, producing "Native Windows wider or taller
+  # than 32767 pixels are not supported" - install a normal font so this
+  # environment isn't artificially font-starved in a way no real user's
+  # desktop would be.
   case $SPREAD_SYSTEM in
     centos-*|rockylinux-*)
-      dnf install -y xorg-x11-server-Xvfb
+      dnf install -y xorg-x11-server-Xvfb dejavu-sans-fonts
       ;;
     ubuntu-*)
-      apt install -y xvfb
+      apt install -y xvfb fonts-dejavu-core
       ;;
   esac
 
@@ -53,6 +63,13 @@ execute: |
     FAILED=1
   else
     "$CHECK" "GUI frame" || FAILED=1
+    # catch things like a missing pixbuf loader breaking icon rendering -
+    # these don't crash emacs so the checks above wouldn't otherwise notice
+    if grep -qE '\): (Gtk|Gdk|GdkPixbuf)-(WARNING|CRITICAL|ERROR) \*\*:' /tmp/emacs-gui.log; then
+      echo "GUI frame: unexpected Gtk/Gdk warnings:"
+      grep -E '\): (Gtk|Gdk|GdkPixbuf)-(WARNING|CRITICAL|ERROR) \*\*:' /tmp/emacs-gui.log
+      FAILED=1
+    fi
   fi
   kill $EMACS_PID 2>/dev/null || true
   kill $XVFB_PID 2>/dev/null || true
