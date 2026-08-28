@@ -101,6 +101,8 @@ int main(int argc, char *argv[]) {
   const char *snap_user_common;
   char *arch = NULL;
   char *variant_path;
+  char *snap_base = NULL;
+  char *cache_key = NULL;
   char *gdk_cache_dir = NULL;
   char *gio_module_dir = NULL;
   char *gconv_path = NULL;
@@ -154,10 +156,52 @@ int main(int argc, char *argv[]) {
 
   dbg("Using SNAP_USER_COMMON %s\n", snap_user_common);
 
+  // determine the base snap we are built against - a rebuild against a new
+  // base (eg core24 -> core26) drags in a wholesale new set of bundled
+  // libraries (GTK, libX11, gdk-pixbuf etc) which can invalidate our cached
+  // gschemas/immodules/gdk-pixbuf-loaders/fontconfig state even though
+  // VARIANT hasn't changed, so fold it into the same cache key. We
+  // deliberately don't key on SNAP_REVISION/SNAP_VERSION instead - the snap
+  // gets rebuilt periodically to pick up routine stage-package updates
+  // within the same base, and regenerating on every such rebuild would be
+  // needlessly frequent.
+  {
+    char *snap_yaml_path;
+    asprintf(&snap_yaml_path, "%s/meta/snap.yaml", snap);
+    FILE *fp = fopen(snap_yaml_path, "r");
+    if (fp != NULL) {
+      char line[256];
+      while (fgets(line, sizeof(line), fp) != NULL) {
+        if (strncmp(line, "base:", 5) == 0) {
+          char *value = line + 5;
+          while (*value == ' ') {
+            value++;
+          }
+          size_t len = strlen(value);
+          while (len > 0 &&
+                 (value[len - 1] == '\n' || value[len - 1] == '\r')) {
+            value[--len] = '\0';
+          }
+          snap_base = strdup(value);
+          break;
+        }
+      }
+      fclose(fp);
+    }
+    if (snap_base == NULL) {
+      dbg("Failed to determine base from %s - assuming 'unknown'\n",
+          snap_yaml_path);
+      snap_base = strdup("unknown");
+    }
+  }
+  dbg("Using base %s\n", snap_base);
+
+  asprintf(&cache_key, "%s %s", VARIANT, snap_base);
+
   asprintf(&variant_path, "%s/.emacs-variant", snap_user_common);
   dbg("Using variant path %s\n", variant_path);
-  // read/write variant so we can check if we have changed variant and hence
-  // need to re-run everything
+  // read/write variant+base so we can check if either has changed and hence
+  // we need to re-run everything
   {
     FILE *fp = fopen(variant_path, "r");
     if (fp != NULL) {
@@ -171,11 +215,11 @@ int main(int argc, char *argv[]) {
           line[strlen(line) - 1] = '\0';
         }
         // check if the variant matches what we expect
-        if (strcmp(line, VARIANT) != 0) {
-          dbg("Variant '%s' does not match expected '%s'\n", line, VARIANT);
+        if (strcmp(line, cache_key) != 0) {
+          dbg("Variant '%s' does not match expected '%s'\n", line, cache_key);
           overwrite = 1;
         } else {
-          dbg("Variant '%s' matches expected '%s'\n", line, VARIANT);
+          dbg("Variant '%s' matches expected '%s'\n", line, cache_key);
           overwrite = 0;
         }
       } else {
@@ -187,14 +231,14 @@ int main(int argc, char *argv[]) {
     } else {
       // if we can't open the variant file then we assume we are running the
       // first time and hence need to write the variant
-      dbg("Writing variant '%s' to %s\n", VARIANT, variant_path);
+      dbg("Writing variant '%s' to %s\n", cache_key, variant_path);
       fp = fopen(variant_path, "w");
       if (fp == NULL) {
         fprintf(stderr, "Failed to open %s for writing: %s\n", variant_path,
                 strerror(errno));
         exit(1);
       }
-      fprintf(fp, "%s\n", VARIANT);
+      fprintf(fp, "%s\n", cache_key);
       fclose(fp);
     }
   }
@@ -211,14 +255,14 @@ int main(int argc, char *argv[]) {
     }
     // write the variant file again
     {
-      dbg("Writing variant '%s' to %s\n", VARIANT, variant_path);
+      dbg("Writing variant '%s' to %s\n", cache_key, variant_path);
       FILE *fp = fopen(variant_path, "w");
       if (fp == NULL) {
         fprintf(stderr, "Failed to open %s for writing: %s\n", variant_path,
                 strerror(errno));
         exit(1);
       }
-      fprintf(fp, "%s\n", VARIANT);
+      fprintf(fp, "%s\n", cache_key);
       fclose(fp);
     }
   }
