@@ -33,7 +33,30 @@ execute: |
   test -f ~/snap/emacs/common/.emacs-variant
   VARIANT=$(cat ~/snap/emacs/common/.emacs-variant)
 
+  # the cache key is "<variant> <base>" - check it really does include the
+  # base snap we are built against, matching /snap/emacs/current/meta/snap.yaml
+  BASE=$(awk -F': ' '/^base:/{print $2}' /snap/emacs/current/meta/snap.yaml)
+  [ -n "$BASE" ]
+  [[ "$VARIANT" == *" $BASE" ]]
+  BRANCH=${VARIANT% *}
+
   # and check that if we change the variant then it all gets recreated
   echo bar > ~/snap/emacs/common/.emacs-variant
   emacs --batch --eval '(kill-emacs)'
   [ $VARIANT == $(cat ~/snap/emacs/common/.emacs-variant) ]
+
+  # and check that if just the base changes (variant/branch unchanged) then
+  # it also all gets recreated - this is what lets us pick up a rebuild
+  # against a new base (eg core24 -> core26) without needing a variant/branch
+  # change, since a new base can bundle a wholesale different set of
+  # libraries (GTK, libX11, gdk-pixbuf etc) that our cached
+  # gschemas/immodules/gdk-pixbuf-loaders/fontconfig state depends on
+  # the sentinel proves the cache dir was actually wiped and regenerated -
+  # checking .emacs-variant alone would only prove that file got rewritten,
+  # not that the rest of SNAP_USER_COMMON (gschemas, immodules,
+  # gdk-pixbuf-loaders, fontconfig caches) was really thrown away too
+  touch ~/snap/emacs/common/.cache/base-change-sentinel
+  echo "$BRANCH not-a-real-base" > ~/snap/emacs/common/.emacs-variant
+  emacs --batch --eval '(kill-emacs)'
+  [ $VARIANT == $(cat ~/snap/emacs/common/.emacs-variant) ]
+  ! test -f ~/snap/emacs/common/.cache/base-change-sentinel
