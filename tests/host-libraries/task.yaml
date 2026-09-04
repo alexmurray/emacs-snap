@@ -53,7 +53,21 @@ execute: |
   # than silently skip.
   Xvfb :99 -screen 0 1024x768x24 > /tmp/xvfb.log 2>&1 &
   XVFB_PID=$!
-  sleep 1
+  for i in $(seq 1 50); do
+    [ -S /tmp/.X11-unix/X99 ] && break
+    sleep 0.1
+  done
+  if ! kill -0 $XVFB_PID 2>/dev/null; then
+    echo "Xvfb exited early:"
+    cat /tmp/xvfb.log
+    exit 1
+  fi
+  if [ ! -S /tmp/.X11-unix/X99 ]; then
+    echo "Xvfb did not create X11 socket in time:"
+    cat /tmp/xvfb.log
+    kill $XVFB_PID 2>/dev/null || true
+    exit 1
+  fi
   DISPLAY=:99 emacs > /tmp/emacs-gui.log 2>&1 &
   EMACS_PID=$!
   sleep 3
