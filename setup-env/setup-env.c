@@ -887,10 +887,15 @@ int main(int argc, char *argv[]) {
   {
     int fd;
     char label[1024] = {0};
+    ssize_t n;
 
     fd = open("/proc/self/attr/current", O_RDONLY | O_CLOEXEC);
-    read(fd, label, sizeof(label));
+    n = read(fd, label, sizeof(label) - 1);
     close(fd);
+    // /proc/self/attr/current is newline-terminated, so strip it before
+    // matching the "(complain)" suffix below
+    if (n > 0 && label[n - 1] == '\n')
+      label[n - 1] = '\0';
 
     // if label starts with snap.emacs. and ends with (complain) then set to
     // unconfined
