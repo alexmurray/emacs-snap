@@ -45,7 +45,7 @@ execute: |
   # and check that if we change the variant then it all gets recreated
   echo bar > ~/snap/emacs/common/.emacs-variant
   emacs --batch --eval '(kill-emacs)'
-  [ $VARIANT == $(cat ~/snap/emacs/common/.emacs-variant) ]
+  [ "$VARIANT" == "$(cat ~/snap/emacs/common/.emacs-variant)" ]
 
   # and check that if just the base changes (variant/branch unchanged) then
   # it also all gets recreated - this is what lets us pick up a rebuild
@@ -60,7 +60,7 @@ execute: |
   touch ~/snap/emacs/common/.cache/base-change-sentinel
   echo "$BRANCH not-a-real-base" > ~/snap/emacs/common/.emacs-variant
   emacs --batch --eval '(kill-emacs)'
-  [ $VARIANT == $(cat ~/snap/emacs/common/.emacs-variant) ]
+  [ "$VARIANT" == "$(cat ~/snap/emacs/common/.emacs-variant)" ]
   ! test -f ~/snap/emacs/common/.cache/base-change-sentinel
 
   case $SPREAD_SYSTEM in
