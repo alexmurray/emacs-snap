@@ -82,5 +82,34 @@
                "SNAP_NAME"))
   (setenv env))
 
+;; classic-confinement snaps get an AppArmor profile from snapd that is left
+;; in complain mode (log-only, not actually confining anything). Ubuntu's
+;; dock identifies an application window by falling back to the owning
+;; process's AppArmor label, so we deliberately leave Emacs's own process
+;; under that "snap.emacs.emacs" label - if Emacs itself moved to
+;; "unconfined" the dock could no longer associate its window with its own
+;; launcher, leaving it ungrouped with a generic icon. However any process
+;; Emacs itself later spawns (e.g. a browser opened from a link, or M-x
+;; compile) should NOT inherit that same label, since it would then get
+;; grouped under the Emacs icon too and, for at least Firefox, misbehave by
+;; assuming it is confined by the snap and picking the wrong profile - see
+;; https://github.com/alexmurray/emacs-snap/issues/36. AppArmor's "onexec"
+;; transition gives us both at once: arming it here, from inside the
+;; already-running Emacs process, doesn't touch Emacs's own current label,
+;; but is inherited by every process forked from this point on and fires the
+;; moment each one calls exec.
+(let* ((attr-dir (if (file-exists-p "/proc/self/attr/apparmor/current")
+                      "/proc/self/attr/apparmor/"
+                    "/proc/self/attr/"))
+       (label (ignore-errors
+                (with-temp-buffer
+                  (insert-file-contents-literally (concat attr-dir "current"))
+                  (buffer-string)))))
+  (when (and label
+             (string-prefix-p "snap.emacs." label)
+             (string-match-p "(complain)[\n]*\\'" label))
+    (ignore-errors
+      (write-region "exec unconfined" nil (concat attr-dir "exec") nil 'silent))))
+
 (provide 'site-start)
 ;;; site-start.el ends here
