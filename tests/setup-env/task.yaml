@@ -16,6 +16,8 @@ restore: |
   if [ ! -f /usr/share/glib-2.0/schemas/gschemas.compiled ]; then
     rm -f /usr/share/glib-2.0/schemas/*.xml
   fi
+  pkill -x emacs 2>/dev/null || true
+  rm -f /tmp/emacs-apparmor.log
 
 execute: |
   ! test -d ~/snap/emacs/common/.cache/schemas
@@ -60,3 +62,42 @@ execute: |
   emacs --batch --eval '(kill-emacs)'
   [ $VARIANT == $(cat ~/snap/emacs/common/.emacs-variant) ]
   ! test -f ~/snap/emacs/common/.cache/base-change-sentinel
+
+  case $SPREAD_SYSTEM in
+    ubuntu-*)
+      # classic-confinement snaps get an AppArmor profile from snapd that is
+      # left in complain mode (log-only, not actually confining anything) -
+      # centos-*/rockylinux-* use SELinux instead and have no equivalent
+      # profile, hence ubuntu-* only. setup-env.c detects that complain-mode
+      # profile on startup and issues a best-effort "changeprofile
+      # unconfined" so nothing is even logged. Query the loaded policy's
+      # declared mode (independent of any one process's transitioned state)
+      # straight from the kernel via securityfs rather than assuming or
+      # parsing aa-status, whose flags/output vary across the apparmor-utils
+      # versions spread across ubuntu-18.04..ubuntu-26.04. Then confirm a
+      # real emacs process actually ends up unconfined - use
+      # /proc/$PID/attr/apparmor/current (the LSM-specific path) rather than
+      # the legacy /proc/$PID/attr/current, since the latter's format changes
+      # when multiple LSMs are stacked.
+      if grep -qx "snap.emacs.emacs (complain)" /sys/kernel/security/apparmor/profiles 2>/dev/null; then
+        emacs --batch --eval '(sleep-for 10)' > /tmp/emacs-apparmor.log 2>&1 &
+        EMACS_PID=$!
+        sleep 2
+        if ! kill -0 $EMACS_PID 2>/dev/null; then
+          echo "emacs exited early:"
+          cat /tmp/emacs-apparmor.log
+          exit 1
+        fi
+        ATTR=/proc/$EMACS_PID/attr/apparmor/current
+        # the per-LSM path only exists from Linux 5.1 onward (LSM stacking) -
+        # fall back to the legacy path otherwise
+        [ -e "$ATTR" ] || ATTR=/proc/$EMACS_PID/attr/current
+        LABEL=$(cat "$ATTR")
+        kill $EMACS_PID 2>/dev/null || true
+        wait $EMACS_PID 2>/dev/null || true
+        [ "$LABEL" = unconfined ]
+      else
+        echo "snap.emacs.emacs is not a complain-mode AppArmor profile on $SPREAD_SYSTEM, skipping"
+      fi
+      ;;
+  esac
