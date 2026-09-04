@@ -8,6 +8,9 @@ prepare: |
   if [ -f /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml ]; then
     mv /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml.bak
   fi
+  # best-effort: used to check the LP#1849753 fd-inheritance regression below
+  # - if the store is unreachable, that check just skips cleanly
+  snap install yq || true
 
 restore: |
   if [ -f /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml.bak ]; then
@@ -17,7 +20,8 @@ restore: |
     rm -f /usr/share/glib-2.0/schemas/*.xml
   fi
   pkill -x emacs 2>/dev/null || true
-  rm -f /tmp/emacs-apparmor.log
+  rm -f /tmp/emacs-apparmor.log /tmp/emacs-snap-fd-test.yml
+  snap remove yq 2>/dev/null || true
 
 execute: |
   ! test -d ~/snap/emacs/common/.cache/schemas
@@ -68,19 +72,19 @@ execute: |
       # classic-confinement snaps get an AppArmor profile from snapd that is
       # left in complain mode (log-only, not actually confining anything) -
       # centos-*/rockylinux-* use SELinux instead and have no equivalent
-      # profile, hence ubuntu-* only. setup-env.c detects that complain-mode
-      # profile on startup and issues a best-effort "changeprofile
-      # unconfined" so nothing is even logged. Query the loaded policy's
-      # declared mode (independent of any one process's transitioned state)
-      # straight from the kernel via securityfs rather than assuming or
-      # parsing aa-status, whose flags/output vary across the apparmor-utils
-      # versions spread across ubuntu-18.04..ubuntu-26.04. Then confirm a
-      # real emacs process actually ends up unconfined - use
-      # /proc/$PID/attr/apparmor/current (the LSM-specific path) rather than
-      # the legacy /proc/$PID/attr/current, since the latter's format changes
-      # when multiple LSMs are stacked.
+      # profile, hence ubuntu-* only. Ubuntu's dock identifies a window by
+      # falling back to the owning process's AppArmor label, so Emacs's own
+      # process deliberately keeps the "snap.emacs.emacs" label (see
+      # site-start.el) - only processes Emacs itself later spawns should
+      # become unconfined, otherwise they get wrongly grouped under the
+      # Emacs icon too and, for at least Firefox, misbehave by assuming
+      # they're confined by the snap (see issue #36). Query the loaded
+      # policy's declared mode (independent of any one process's
+      # transitioned state) straight from the kernel via securityfs rather
+      # than assuming or parsing aa-status, whose flags/output vary across
+      # the apparmor-utils versions spread across ubuntu-18.04..ubuntu-26.04.
       if grep -qx "snap.emacs.emacs (complain)" /sys/kernel/security/apparmor/profiles 2>/dev/null; then
-        emacs --batch --eval '(sleep-for 10)' > /tmp/emacs-apparmor.log 2>&1 &
+        emacs --batch --eval '(progn (server-start) (sleep-for 15))' > /tmp/emacs-apparmor.log 2>&1 &
         EMACS_PID=$!
         sleep 2
         if ! kill -0 $EMACS_PID 2>/dev/null; then
@@ -88,14 +92,73 @@ execute: |
           cat /tmp/emacs-apparmor.log
           exit 1
         fi
-        ATTR=/proc/$EMACS_PID/attr/apparmor/current
+
         # the per-LSM path only exists from Linux 5.1 onward (LSM stacking) -
         # fall back to the legacy path otherwise
+        ATTR=/proc/$EMACS_PID/attr/apparmor/current
         [ -e "$ATTR" ] || ATTR=/proc/$EMACS_PID/attr/current
-        LABEL=$(cat "$ATTR")
+        OWN_LABEL=$(cat "$ATTR")
+
+        # a process emacs itself spawns should be unconfined instead - run
+        # call-process inside the live instance via emacsclient rather than
+        # assuming a second `emacs --batch` invocation shares its onexec
+        # state (it wouldn't - onexec is armed per-process in site-start.el)
+        CHILD_LABEL=$(emacs.emacsclient --eval '
+          (with-temp-buffer
+            (call-process "cat" nil t nil
+                          (if (file-exists-p "/proc/self/attr/apparmor/current")
+                              "/proc/self/attr/apparmor/current"
+                            "/proc/self/attr/current"))
+            (string-trim (buffer-string)))' 2>&1)
+        CHILD_LABEL=${CHILD_LABEL#\"}
+        CHILD_LABEL=${CHILD_LABEL%\"}
+
+        # LP#1849753: AppArmor revalidates file-descriptor inheritance
+        # whenever a process transitions into a "differently confined"
+        # domain, which historically broke things like `yq < file.yml` when
+        # yq is installed as a snap - snap-confine carries its own
+        # hard-coded, always-enforced profile, so even a merely
+        # complain-mode caller (like a bare "snap.emacs.emacs") can trip
+        # this. The onexec transition above should already dodge it: since
+        # whatever Emacs spawns becomes unconfined at its own first exec,
+        # by the time it reaches snap-confine (invoking yq) it looks like
+        # any ordinary unconfined caller, not a distinctly-labelled one.
+        # Use call-process-shell-command (runs "/bin/sh -c '... < file'")
+        # rather than call-process's own INFILE argument - both dup2() the
+        # file onto stdin before exec, reproducing the fd-inheritance-across-
+        # exec shape of the shell's own "yq < file.yml" from the bug report,
+        # but going via an intermediate /bin/sh avoids an unrelated quirk:
+        # yq's own argument-detection apparently consults something
+        # tty/session-related that differs between an interactive shell and
+        # a controlling-terminal-less batch Emacs server, and misfires (falls
+        # back to printing its usage text) when Emacs execs it directly via
+        # call-process's INFILE. Invoke /snap/bin/yq by absolute path rather
+        # than a bare "yq" off $PATH - some of these systems also have an
+        # unrelated host-installed yq (eg python's, via apt/pip) that would
+        # silently pass this check without ever going through snap-confine
+        # at all.
+        HAVE_YQ=0
+        if [ -x /snap/bin/yq ]; then
+          HAVE_YQ=1
+          echo 'foo: bar' > /tmp/emacs-snap-fd-test.yml
+          FD_RESULT=$(emacs.emacsclient --eval '
+            (with-temp-buffer
+              (let ((code (call-process-shell-command
+                           "/snap/bin/yq \".foo\" < /tmp/emacs-snap-fd-test.yml"
+                           nil t nil)))
+                (format "%d:%s" code (string-trim (buffer-string)))))' 2>&1)
+          FD_RESULT=${FD_RESULT#\"}
+          FD_RESULT=${FD_RESULT%\"}
+        else
+          echo "yq snap not available on $SPREAD_SYSTEM, skipping fd-inheritance check"
+        fi
+
         kill $EMACS_PID 2>/dev/null || true
         wait $EMACS_PID 2>/dev/null || true
-        [ "$LABEL" = unconfined ]
+
+        [ "$OWN_LABEL" = "snap.emacs.emacs (complain)" ]
+        [ "$CHILD_LABEL" = unconfined ]
+        [ "$HAVE_YQ" -eq 0 ] || [ "$FD_RESULT" = "0:bar" ]
       else
         echo "snap.emacs.emacs is not a complain-mode AppArmor profile on $SPREAD_SYSTEM, skipping"
       fi

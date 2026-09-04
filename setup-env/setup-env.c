@@ -882,34 +882,14 @@ int main(int argc, char *argv[]) {
     setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1);
   }
 
-  // finally break out of AppArmor confinement ignoring errors here since this
-  // is best effort
-  {
-    int fd;
-    char label[1024] = {0};
-    ssize_t n;
-
-    fd = open("/proc/self/attr/current", O_RDONLY | O_CLOEXEC);
-    n = read(fd, label, sizeof(label) - 1);
-    close(fd);
-    // /proc/self/attr/current is newline-terminated, so strip it before
-    // matching the "(complain)" suffix below
-    if (n > 0 && label[n - 1] == '\n')
-      label[n - 1] = '\0';
-
-    // if label starts with snap.emacs. and ends with (complain) then set to
-    // unconfined
-    if (strncmp(label, "snap.emacs.", strlen("snap.emacs.")) == 0 &&
-        strlen(label) > strlen("(complain)") &&
-        strncmp(label + strlen(label) - strlen("(complain)"), "(complain)",
-                strlen("(complain)")) == 0) {
-      // ignore errors here too
-      fd = open("/proc/self/attr/current", O_WRONLY | O_APPEND);
-      dbg("Changing AppArmor profile to unconfined\n");
-      write(fd, "changeprofile unconfined", strlen("changeprofile unconfined"));
-      close(fd);
-    }
-  }
+  // Note: we deliberately do NOT change Emacs's own AppArmor profile here.
+  // Ubuntu's dock identifies windows by falling back to the owning
+  // process's AppArmor label, so leaving Emacs itself labelled
+  // "snap.emacs.emacs" is what lets the dock associate its window with its
+  // own launcher icon. What we actually want unconfined is any process
+  // Emacs later spawns (see site-start.el, which arms an AppArmor onexec
+  // transition from inside the running Emacs process for exactly that,
+  // without touching Emacs's own label).
 
   // finally exec argv if we have one
   if (argc > 1) {
