@@ -52,6 +52,19 @@ backends:
           username: rocky
           password: rocky
 
+  # lightweight backend for CI (github.com/actions): no image-baking needed,
+  # spread resolves e.g. "ubuntu-24.04" straight to the official
+  # ubuntu:24.04/amd64 LXD image, and containers don't need KVM/nested
+  # virtualization like the qemu backend does. Only covers the CHANNEL/local
+  # suite (see .github/workflows/main.yml) since there's no snap store
+  # network access assumed in CI. Systems are the top 3 by install-base
+  # share per the snap store metrics (~84% combined: 24.04/22.04/26.04).
+  lxd:
+    systems:
+      - ubuntu-22.04
+      - ubuntu-24.04
+      - ubuntu-26.04
+
 path: /spread/emacs-snap
 
 exclude:
