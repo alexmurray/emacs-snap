@@ -117,7 +117,7 @@ suites:
       esac
 
     prepare-each: |
-      if [ $CHANNEL == local ]; then
+      if [ "$CHANNEL" = local ]; then
         snap install --classic --dangerous $SPREAD_PATH/emacs_*.snap
       else
         # store-channel installs occasionally hit a transient
