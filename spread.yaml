@@ -1,69 +1,63 @@
 project: emacs-snap
 
 backends:
-  qemu:
+  # spread integration for image-garden(1) (https://gitlab.com/zygoon/image-garden)
+  # - a single backend for both local dev and CI (github.com/zyga/image-
+  # garden-action). It downloads and caches official cloud images and boots
+  # them under real QEMU/KVM, so unlike the lxd container backend this
+  # replaced, there's no nested AppArmor policy namespace to trip over (see
+  # git history on tests/setup-env/task.yaml for what that cost us) and,
+  # unlike the old qemu backend, no manual image-baking either. Needs the
+  # image-garden snap (`snap install image-garden`) and /dev/kvm access -
+  # GitHub's standard hosted runners have both.
+  garden:
+    type: adhoc
+    allocate: |
+      if [ -n "${SPREAD_HOST_PATH-}" ]; then
+        PATH="${SPREAD_HOST_PATH}"
+      fi
+      exec image-garden allocate --spread "$SPREAD_SYSTEM"."$(uname -m)"
+    discard: |
+      if [ -n "${SPREAD_HOST_PATH-}" ]; then
+        PATH="${SPREAD_HOST_PATH}"
+      fi
+      exec image-garden discard "$SPREAD_SYSTEM_ADDRESS"
     systems:
-      # build via autopkgtest-buildvm-ubuntu-cloud and mv to ~/.spread/qemu/
-      - ubuntu-18.04-64:
+      - ubuntu-cloud-18.04:
           username: ubuntu
           password: ubuntu
-      - ubuntu-20.04-64:
+      - ubuntu-cloud-20.04:
           username: ubuntu
           password: ubuntu
-      - ubuntu-22.04-64:
+      - ubuntu-cloud-22.04:
           username: ubuntu
           password: ubuntu
-      - ubuntu-24.04-64:
+      - ubuntu-cloud-24.04:
           username: ubuntu
           password: ubuntu
-      - ubuntu-26.04-64:
+      - ubuntu-cloud-26.04:
           username: ubuntu
           password: ubuntu
 
-      # build an image as per
-      # https://blog.strandboge.com/2019/04/16/cloud-images-qemu-cloud-init-and-snapd-spread-tests/
-      - centos-8-64:
+      # centos-cloud-8 and rocky-cloud-8 aren't offered any more (both EOL)
+      # - standardised on the 9 stream for both rather than mixing families
+      - centos-cloud-9:
           username: centos
           password: centos
-      # also build as per jdstrand's blog post but using image from
-      # https://dl.rockylinux.org/pub/rocky/8/images/x86_64/
-      # wget https://dl.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud.latest.x86_64.qcow2
-      # #cp instead of mv so we can try again if we mess it up
-      # cp Rocky-8-GenericCloud.latest.x86_64.qcow2 rockylinux-8-64.img
-      # qemu-img resize rockylinux-8-64.img 20G
-      # cat <<EOF>rockylinux-data
-      # #cloud-config
-      # password: rocky
-      # chpasswd: { expire: false }
-      # ssh_pwauth: true
-      # EOF
-      # cat <<EOF>rockylinux-meta-data
-      # instance-id: i-rockylinux-8-64
-      # local-hostname: rockylinux-8-64
-      # EOF
-      # cloud-localds -v ./rockylinux-seed.img ./rockylinux-data ./rockylinux-meta-data
-      # kvm -M pc -m 1024 -smp 1 -monitor pty -nographic -hda ./rockylinux-8-64.img -drive "file=./rockylinux-seed.img,if=virtio,format=raw" -net nic -net user,hostfwd=tcp:127.0.0.1:59355-:22
-      #
-      # wait for it to boot and finish configuring via cloud-init then in another terminal
-      # ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 59355 rocky@127.0.0.1 sudo touch /etc/cloud/cloud-init.disabled
-      # ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p 59355 rocky@127.0.0.1 sudo shutdown -h now
-      # mv rockylinux-8-64.img ~/.spread/qemu/
-      - rockylinux-8-64:
+      - rocky-cloud-9:
           username: rocky
           password: rocky
 
-  # lightweight backend for CI (github.com/actions): no image-baking needed,
-  # spread resolves e.g. "ubuntu-24.04" straight to the official
-  # ubuntu:24.04/amd64 LXD image, and containers don't need KVM/nested
-  # virtualization like the qemu backend does. Only covers the CHANNEL/local
-  # suite (see .github/workflows/main.yml) since there's no snap store
-  # network access assumed in CI. Systems are the top 3 by install-base
-  # share per the snap store metrics (~84% combined: 24.04/22.04/26.04).
-  lxd:
-    systems:
-      - ubuntu-22.04
-      - ubuntu-24.04
-      - ubuntu-26.04
+      # per install-base share, Debian is the only non-Ubuntu-derived distro
+      # with meaningful usage that isn't already covered above (Mint, Pop,
+      # Zorin etc are all Ubuntu derivatives, closely proxied by testing
+      # real Ubuntu)
+      - debian-cloud-12:
+          username: debian
+          password: debian
+      - debian-cloud-13:
+          username: debian
+          password: debian
 
 path: /spread/emacs-snap
 
@@ -91,7 +85,7 @@ suites:
     summary: spread tests
     prepare: |
       case $SPREAD_SYSTEM in
-        centos-*|rockylinux-*)
+        centos-*|rocky-*)
           if [ $SPREAD_REBOOT = 0 ]; then
             # disable SELinux since otherwise snapd can't seem to talk to store
             sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
@@ -106,7 +100,7 @@ suites:
           ln -sf /var/lib/snapd/snap /snap
           snap wait system seed.loaded
           ;;
-        ubuntu-*)
+        ubuntu-*|debian-*)
           # ensure machine is up to date
           export DEBIAN_FRONTEND=noninteractive
           # use apt-get to support older Ubuntu releases
@@ -126,7 +120,18 @@ suites:
       if [ $CHANNEL == local ]; then
         snap install --classic --dangerous $SPREAD_PATH/emacs_*.snap
       else
-        snap install --classic --channel $CHANNEL emacs
+        # store-channel installs occasionally hit a transient
+        # store-communication error (e.g. a request racing snapd's own
+        # "waiting for automatic snapd restart" post-install handoff) -
+        # retry a few times rather than failing the whole task on a blip.
+        n=0
+        until snap install --classic --channel $CHANNEL emacs; do
+          n=$((n + 1))
+          if [ $n -ge 3 ]; then
+            exit 1
+          fi
+          sleep 10
+        done
       fi
 
     restore-each: |

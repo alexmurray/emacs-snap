@@ -12,46 +12,6 @@ prepare: |
   # - if the store is unreachable, that check just skips cleanly
   snap install yq || true
 
-  # Work around LP#1815869: snap-confine's own AppArmor profile has no way to
-  # delegate an inherited file descriptor's permission check to the eventual
-  # per-app profile, so revalidating an inherited fd (eg a shell redirect
-  # like `yq < file.yml`) against snap-confine's own narrow profile can fail
-  # even for files the invoking user plainly owns. This is normally masked by
-  # the kernel's aa_file_perm() fast path for genuinely unconfined callers,
-  # but that fast path is skipped once a process has triggered Ubuntu's
-  # unprivileged_userns AppArmor profile stacking (eg via
-  # unshare(CLONE_NEWUSER)) - which every process inside an unprivileged LXD
-  # container has, inherited from the container's own init onward, which is
-  # why the lxd backend trips this and qemu's real VMs don't.
-  if [ "$SPREAD_BACKEND" = lxd ] && [[ "$SPREAD_SYSTEM" == ubuntu-* ]]; then
-    # Grant the same owner-scoped access snap-confine already carries for our
-    # test fixture's use of /tmp so inherited fds for files the invoking user
-    # owns are honoured consistently regardless of which fast path applies.
-    #
-    # Both the deb-packaged profile (confining /usr/lib/snapd/snap-confine) and
-    # the snapd-snap-bundled one (confining
-    # /snap/snapd/<rev>/usr/lib/snapd/snap-confine) #include a snapd-managed
-    # directory wholesale - any file dropped in there becomes part of the
-    # compiled profile automatically, the same way each one's existing "cap-bpf"
-    # file already does. That directory's name is snapd-version- specific and
-    # not safe to hardcode: it's "snap-confine" on snapd 2.76.3+ubuntu24.04, but
-    # was renamed to "snap-confine.internal" by snapd 2.76.3+ubuntu26.04 (both
-    # otherwise report the same "snap version" output, so the name alone doesn't
-    # tell you which one a given system uses) - so read the real #include target
-    # out of each profile source instead of guessing it.
-    for src in /etc/apparmor.d/usr.lib.snapd.snap-confine.real /var/lib/snapd/apparmor/profiles/snap-confine.snapd.*; do
-      [ -f "$src" ] || continue
-      inc=$(sed -n 's/.*#include "\(\/var\/lib\/snapd\/apparmor\/[^"]*\)".*/\1/p' "$src" | head -1)
-      if [ -n "$inc" ] && [ -d "$inc" ]; then
-        printf 'owner /tmp/** rw,\n' > "$inc/zz-fd-inherit-workaround"
-      fi
-    done
-    # Restart both services which manage these profiles since which of the two
-    # profiles above is the one that actually matters isn't guaranteed to be the
-    # same on every system.
-    systemctl restart snapd.apparmor.service apparmor.service 2>/dev/null || true
-  fi
-
 restore: |
   if [ -f /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml.bak ]; then
     mv /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml.bak /usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml
@@ -62,18 +22,6 @@ restore: |
   pkill -x emacs 2>/dev/null || true
   rm -f /tmp/emacs-apparmor.log /tmp/emacs-snap-fd-test.yml
   snap remove yq 2>/dev/null || true
-
-  # undo the LP#1815869 workaround from prepare - same dynamic #include
-  # discovery as prepare, since the target directory name is snapd-version-
-  # specific (see prepare for why)
-  for src in /etc/apparmor.d/usr.lib.snapd.snap-confine.real /var/lib/snapd/apparmor/profiles/snap-confine.snapd.*; do
-    [ -f "$src" ] || continue
-    inc=$(sed -n 's/.*#include "\(\/var\/lib\/snapd\/apparmor\/[^"]*\)".*/\1/p' "$src" | head -1)
-    if [ -n "$inc" ] && [ -f "$inc/zz-fd-inherit-workaround" ]; then
-      rm -f "$inc/zz-fd-inherit-workaround"
-    fi
-  done
-  systemctl restart snapd.apparmor.service apparmor.service 2>/dev/null || true
 
 execute: |
   ! test -d ~/snap/emacs/common/.cache/schemas

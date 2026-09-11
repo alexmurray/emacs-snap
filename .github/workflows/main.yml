@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      systems: ${{ steps.systems.outputs.systems }}
     steps:
     - uses: actions/checkout@v3
     - uses: snapcore/action-build@v1
@@ -15,6 +17,22 @@ jobs:
       with:
         name: emacs-snap
         path: ${{ steps.build.outputs.snap }}
+    - id: systems
+      name: Read the garden backend's system list out of spread.yaml
+      # spread.yaml is the single source of truth for which systems we test
+      # - extract its backends.garden.systems list (each entry is a one-key
+      # "- system-name:" mapping) as a JSON array for the spread job's
+      # matrix below, rather than hand-duplicating the list here where it
+      # can silently drift out of sync (as happened with an earlier rename
+      # of one of these system names). grep+jq rather than a YAML parser:
+      # avoids needing to know whether PyYAML is preinstalled (it can hit
+      # PEP 668's "externally-managed-environment" restriction if not) or
+      # which of the two incompatible tools named "yq" (if either) is on
+      # PATH - both grep -P and jq are always present on GitHub's runners.
+      run: |
+        systems=$(grep -oP '^\s+-\s+\K[a-zA-Z0-9._-]+(?=:\s*$)' spread.yaml \
+          | jq -R -s -c 'split("\n") | map(select(length > 0))')
+        echo "systems=$systems" >> "$GITHUB_OUTPUT"
 
   spread:
     runs-on: ubuntu-latest
@@ -22,30 +40,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        system: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+        system: ${{ fromJSON(needs.build.outputs.systems) }}
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - uses: actions/download-artifact@v4
       with:
         name: emacs-snap
-    - uses: actions/setup-go@v5
-      with:
-        go-version: stable
-    - name: Install spread
-      run: go install github.com/canonical/spread/cmd/spread@latest
-    - name: Set up LXD
-      run: |
-        sudo groupadd --force lxd
-        sudo usermod --append --groups lxd "$USER"
-        sudo snap install lxd
-        sudo lxd waitready
-        sudo lxd init --auto
-        # Docker (preinstalled on the runner) sets the FORWARD chain policy
-        # to DROP, which silently kills outbound traffic from lxdbr0 since
-        # it isn't Docker's own bridge; reopen it so containers can reach
-        # the network.
-        sudo iptables -P FORWARD ACCEPT
     - name: Run spread tests (local channel only)
-      # sg is needed since the lxd group membership above only takes effect
-      # in a new login session, not this already-running shell
-      run: sg lxd -c "$(go env GOPATH)/bin/spread -v lxd:${{ matrix.system }}:tests/...:local"
+      uses: zyga/image-garden-action@v0
+      with:
+        garden-system: ${{ matrix.system }}
+        spread-tasks: tests/...:local

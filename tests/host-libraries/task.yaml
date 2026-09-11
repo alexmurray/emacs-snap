@@ -12,10 +12,10 @@ prepare: |
   # environment isn't artificially font-starved in a way no real user's
   # desktop would be.
   case $SPREAD_SYSTEM in
-    centos-*|rockylinux-*)
+    centos-*|rocky-*)
       dnf install -y xorg-x11-server-Xvfb dejavu-sans-fonts
       ;;
-    ubuntu-*)
+    ubuntu-*|debian-*)
       apt install -y xvfb fonts-dejavu-core
       ;;
   esac
