@@ -44,14 +44,6 @@ apps:
     command: usr/bin/etags
 
 parts:
-  tree-sitter:
-    plugin: make
-    build-attributes:
-      - enable-patchelf
-    source: https://github.com/tree-sitter/tree-sitter.git
-    source-tag: v0.26.12
-    build-environment:
-      - PREFIX: "/usr"
   gdk-pixbuf:
     # Ubuntu's own libgdk-pixbuf-2.0-0 (2.44+ as used in our base core26)
     # dropped its builtin/module loaders for raster formats (PNG, JPEG, GIF,
@@ -131,7 +123,7 @@ parts:
       ninja -C build
       DESTDIR="${SNAPCRAFT_PART_INSTALL}" ninja -C build install
   emacs:
-    after: [tree-sitter, gdk-pixbuf]
+    after: [gdk-pixbuf]
     plugin: nil
     build-attributes:
       - enable-patchelf
@@ -173,6 +165,7 @@ parts:
       - libsystemd-dev
       - libtiff-dev
       - libtool
+      - libtree-sitter-dev
       - libxi-dev
       - libxml2-dev
       - libxpm-dev
@@ -319,6 +312,9 @@ parts:
       - libtdb1
       - libthai0
       - libtiff6
+      # package name is tied to the SONAME (libtree-sitter.so.0.25) - bump
+      # alongside libtree-sitter-dev above if Ubuntu moves to a new version
+      - libtree-sitter0.25
       - libuuid1
       - libvorbis0a
       - libvorbisenc2
@@ -466,7 +462,7 @@ parts:
     # $SNAPCRAFT_STAGE's shared copy of libc.so can break a later
     # *iterative* rebuild of an earlier-ordered part (e.g. gdk-pixbuf) that
     # still needs to link against libc via stage.
-    after: [tree-sitter, gdk-pixbuf, emacs, site-lisp, setup-env, emacsclient]
+    after: [gdk-pixbuf, emacs, site-lisp, setup-env, emacsclient]
     plugin: nil
     override-prime: |
       set -eu

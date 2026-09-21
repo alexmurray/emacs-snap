@@ -5,16 +5,16 @@ prepare: |
   # cloud images with no fonts at all, which isn't representative of a real
   # desktop.
   #
-  # weston is confirmed packaged for all the ubuntu-* systems here, but not
-  # confirmed available for the centos-*/rockylinux-* (EL8) family - EPEL only
-  # clearly carries it from EPEL 9 onward. Rather than guess, try the install
-  # and let execute skip cleanly if the binary isn't there.
+  # weston is confirmed packaged for all the ubuntu-*/debian-* systems here,
+  # but not confirmed available for the centos-*/rocky-* (EL9) family - EPEL
+  # only clearly carries it from EPEL 9 onward. Rather than guess, try the
+  # install and let execute skip cleanly if the binary isn't there.
   case $SPREAD_SYSTEM in
-    centos-*|rockylinux-*)
+    centos-*|rocky-*)
       dnf install -y dejavu-sans-fonts
       dnf install -y weston || true
       ;;
-    ubuntu-*)
+    ubuntu-*|debian-*)
       apt install -y fonts-dejavu-core
       apt install -y weston || true
       ;;
@@ -74,7 +74,10 @@ execute: |
     cat /tmp/emacs-wayland.log
     FAILED=1
   else
-    WINDOW_SYSTEM=$(emacs.emacsclient --eval '(frame-parameter nil (quote window-system))' 2>&1)
+    # timeout: an emacsclient --eval with no reply (e.g. the Wayland frame
+    # never fully coming up) would otherwise hang until spread's own
+    # kill-timeout, wasting the rest of this task's budget.
+    WINDOW_SYSTEM=$(timeout 30 emacs.emacsclient --eval '(frame-parameter nil (quote window-system))' 2>&1)
     if [ "$WINDOW_SYSTEM" != pgtk ]; then
       echo "expected a native pgtk frame, got: $WINDOW_SYSTEM"
       FAILED=1
