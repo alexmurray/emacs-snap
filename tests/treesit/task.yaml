@@ -1,6 +1,16 @@
 summary: Test treesitter module compilation
 
 execute: |
-  # test treesit compilation
-  emacs --batch --eval "(progn (require 'treesit) (add-to-list 'treesit-language-source-alist '(c . (\"https://github.com/tree-sitter/tree-sitter-c\"))) (treesit-install-language-grammar 'c))"
+  # test treesit compilation and that the compiled grammar actually loads
+  # and parses via the runtime libtree-sitter - a file-existence check
+  # alone would not catch an ABI mismatch between the two
+  emacs --batch --eval "(progn \
+    (require 'treesit) \
+    (unless (treesit-available-p) (error \"tree-sitter not available\")) \
+    (add-to-list 'treesit-language-source-alist '(c . (\"https://github.com/tree-sitter/tree-sitter-c\"))) \
+    (treesit-install-language-grammar 'c) \
+    (unless (treesit-language-available-p 'c) (error \"c grammar failed to load\")) \
+    (with-temp-buffer (insert \"int main(void) { return 0; }\") \
+      (let ((parser (treesit-parser-create 'c))) \
+        (unless (treesit-parser-root-node parser) (error \"parse failed\")))))"
   test -f ~/.emacs.d/tree-sitter/libtree-sitter-c.so
