@@ -1,11 +1,28 @@
 summary: Test native compilation
 
 prepare: |
-  echo '(defun foo () (message "foo"))' >> test.el
+  cat <<'ELISP' > test.el
+  ;;; -*- lexical-binding: t; -*-
+  (defun test-native-comp-fn (x) (* x x 7))
+  ELISP
 
 restore: |
   rm -f test.el
+  rm -f ~/.emacs.d/eln-cache/*/test-*.eln
 
 execute: |
-  # test native compilation
-  emacs --batch --eval '(native-compile "test.el")'
+  # test native compilation actually produces a loadable, genuinely native
+  # .eln and not just that native-compile itself didn't error - a broken
+  # native-comp toolchain (eg a libgccjit/gcc-15 ABI mismatch, or a bad
+  # native-comp-driver-options sysroot) can plausibly compile "successfully"
+  # while producing something that fails, or silently isn't native, only once
+  # actually loaded and called
+  emacs --batch --eval "(progn \
+    (unless (native-comp-available-p) (error \"native compilation not available\")) \
+    (let ((eln (native-compile \"test.el\"))) \
+      (unless (and eln (file-exists-p eln)) (error \"native-compile did not produce an eln file: %S\" eln)) \
+      (load eln) \
+      (unless (subr-native-elisp-p (symbol-function 'test-native-comp-fn)) \
+        (error \"loaded function is not natively compiled: %S\" (symbol-function 'test-native-comp-fn))) \
+      (let ((result (test-native-comp-fn 6))) \
+        (unless (= result 252) (error \"unexpected result from native-compiled function: %S\" result)))))"

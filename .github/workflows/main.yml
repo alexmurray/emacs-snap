@@ -7,6 +7,49 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      systems: ${{ steps.systems.outputs.systems }}
     steps:
     - uses: actions/checkout@v3
     - uses: snapcore/action-build@v1
+      id: build
+    - uses: actions/upload-artifact@v4
+      with:
+        name: emacs-snap
+        path: ${{ steps.build.outputs.snap }}
+    - id: systems
+      name: Read the garden backend's system list out of spread.yaml
+      # spread.yaml is the single source of truth for which systems we test
+      # - extract its backends.garden.systems list (each entry is a one-key
+      # "- system-name:" mapping) as a JSON array for the spread job's
+      # matrix below, rather than hand-duplicating the list here where it
+      # can silently drift out of sync (as happened with an earlier rename
+      # of one of these system names). grep+jq rather than a YAML parser:
+      # avoids needing to know whether PyYAML is preinstalled (it can hit
+      # PEP 668's "externally-managed-environment" restriction if not) or
+      # which of the two incompatible tools named "yq" (if either) is on
+      # PATH - both grep -P and jq are always present on GitHub's runners.
+      run: |
+        systems=$(grep -oP '^\s+-\s+\K[a-zA-Z0-9._-]+(?=:\s*$)' spread.yaml \
+          | jq -R -s -c 'split("\n") | map(select(length > 0))')
+        echo "systems=$systems" >> "$GITHUB_OUTPUT"
+
+  spread:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        system: ${{ fromJSON(needs.build.outputs.systems) }}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: actions/download-artifact@v4
+      with:
+        name: emacs-snap
+    - name: Run spread tests (local channel only)
+      uses: zyga/image-garden-action@v0
+      with:
+        garden-system: ${{ matrix.system }}
+        spread-tasks: tests/...:local
