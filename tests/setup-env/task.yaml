@@ -24,7 +24,7 @@ restore: |
   snap remove yq 2>/dev/null || true
 
 execute: |
-  ! test -d ~/snap/emacs/common/.cache/schemas
+  test ! -d ~/snap/emacs/common/.cache/schemas
 
   # test gschemas handling
   emacs --batch --eval '(kill-emacs)'
@@ -65,7 +65,7 @@ execute: |
   echo "$BRANCH not-a-real-base" > ~/snap/emacs/common/.emacs-variant
   emacs --batch --eval '(kill-emacs)'
   [ "$VARIANT" == "$(cat ~/snap/emacs/common/.emacs-variant)" ]
-  ! test -f ~/snap/emacs/common/.cache/base-change-sentinel
+  test ! -f ~/snap/emacs/common/.cache/base-change-sentinel
 
   case $SPREAD_SYSTEM in
     ubuntu-*)
