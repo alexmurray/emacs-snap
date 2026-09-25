@@ -14,7 +14,13 @@
 ;; will be linked against different libraries than what the Emacs snap base snap
 ;; is using. So make sure they are effectively unset.  Also since we are now
 ;; using base core22, snapcraft helpfully sets LD_LIBRARY_PATH so unset this
-;; too.
+;; too.  The same goes for the glibc data setup-env points at the snap's own
+;; copies: GCONV_PATH (the snap's gconv modules) and LOCPATH (locales generated
+;; for the snap's glibc) would make host programs with a different glibc load
+;; data that isn't theirs - e.g. apparmor_parser run from Emacs was seen to
+;; produce different output with them set - and LIBGL_ALWAYS_SOFTWARE, a
+;; workaround for the snap's own GTK/X11 stack, would force software
+;; rendering on any program Emacs launches.
 (dolist (env '("GIO_MODULE_DIR"
                "GDK_PIXBUF_MODULE_FILE"
                "GDK_PIXBUF_MODULEDIR"
@@ -22,6 +28,9 @@
                "GTK_IM_MODULE_FILE"
                "GTK_PATH"
                "GSETTINGS_SCHEMA_DIR"
+               "GCONV_PATH"
+               "LOCPATH"
+               "LIBGL_ALWAYS_SOFTWARE"
                "LD_LIBRARY_PATH"))
   (setenv env))
 
