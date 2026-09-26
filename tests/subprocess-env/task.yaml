@@ -1,0 +1,40 @@
+summary: Test that processes Emacs spawns don't inherit snap-only environment
+
+details: |
+  setup-env points a number of variables at the snap's own libraries and
+  data before exec'ing Emacs; site-start.el must remove them from
+  process-environment so that programs Emacs launches (compilers, linters,
+  browsers, ...) don't load snap data built for a different glibc/GTK. For
+  example, GCONV_PATH and LOCPATH leaking into apparmor_parser changed its
+  output.
+
+restore: |
+  rm -f emacs-env.txt child-env.txt
+
+execute: |
+  # en_US.UTF-8 so setup-env generates locale data and sets LOCPATH too
+  export LANG=en_US.UTF-8
+
+  # what setup-env gave Emacs itself (its real OS-level environment), and
+  # what a process Emacs spawns via process-environment sees
+  emacs --batch --eval '
+    (progn
+      (with-temp-file "emacs-env.txt"
+        (insert-file-contents "/proc/self/environ")
+        (subst-char-in-region (point-min) (point-max) ?\0 ?\n))
+      (call-process "env" nil (list :file "child-env.txt") nil))'
+
+  VARS='GIO_MODULE_DIR GDK_PIXBUF_MODULE_FILE GDK_PIXBUF_MODULEDIR FONTCONFIG_FILE GTK_IM_MODULE_FILE GTK_PATH GSETTINGS_SCHEMA_DIR GCONV_PATH LOCPATH LIBGL_ALWAYS_SOFTWARE LD_LIBRARY_PATH'
+
+  # GCONV_PATH is always set by setup-env - check it really was, so this test
+  # can't pass just because nothing was set in the first place
+  grep -q '^GCONV_PATH=' emacs-env.txt
+
+  leaked=0
+  for var in $VARS; do
+    if grep -q "^$var=" child-env.txt; then
+      echo "leaked into child process: $(grep "^$var=" child-env.txt)"
+      leaked=1
+    fi
+  done
+  test "$leaked" -eq 0
