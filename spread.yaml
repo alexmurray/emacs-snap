@@ -83,15 +83,19 @@ environment:
 suites:
   tests/:
     summary: spread tests
+    # most of this is already baked into each system's VM image by
+    # .image-garden.mk (so is a cheap no-op here) - it's kept as an
+    # idempotent fallback for a stale or partially provisioned image, and so
+    # each run still picks up any distro updates since the image was built.
     prepare: |
       case $SPREAD_SYSTEM in
         centos-*|rocky-*)
-          if [ $SPREAD_REBOOT = 0 ]; then
-            # disable SELinux since otherwise snapd can't seem to talk to store
+          # disable SELinux since otherwise snapd can't seem to talk to store
+          # - already done in the image, so this only reboots if that failed
+          if [ "$(getenforce)" != Disabled ]; then
             sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
             REBOOT
           fi
-          dnf update -y
           dnf install -y epel-release
           dnf upgrade -y
           dnf install -y selinux-policy selinux-policy-targeted

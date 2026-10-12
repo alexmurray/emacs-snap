@@ -29,6 +29,15 @@ confinement: classic
 license: GPL-3.0+
 compression: lzo
 
+# core26 is not built for i386, so it is not listed here
+platforms:
+  amd64:
+  arm64:
+  armhf:
+  ppc64el:
+  riscv64:
+  s390x:
+
 apps:
   emacs:
     command-chain:
