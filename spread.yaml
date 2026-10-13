@@ -64,6 +64,19 @@ path: /spread/emacs-snap
 exclude:
   - .git
   - .github
+  # image-garden(1) VM images, logs and state, plus spread's own logs, all
+  # left in the repo root by `spread garden:...` runs (see .gitignore) -
+  # without these, spread tars and uploads many GB of VM images into every
+  # VM before it can even start preparing it
+  - .image-garden
+  - "*.qcow2"
+  - "*.img"
+  - "*.iso"
+  - "*.log"
+  - "*.run"
+  - "*.user-data"
+  - "*.meta-data"
+  - "*.lock"
 
 # make sure we don't get killed during prepare
 kill-timeout: 30m
